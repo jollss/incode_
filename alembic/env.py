@@ -25,6 +25,8 @@ fileConfig(config.config_file_name)
 # Search in full project
 import sys
 sys.path = ['', '..'] + sys.path[1:]
+from app.models import ResultsIne
+target_metadata = ResultsIne.metadata
 # Include main Model
 # from app.module.models import Model
 # target_metadata = Model.metadata

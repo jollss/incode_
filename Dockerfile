@@ -4,6 +4,10 @@ WORKDIR /usr/src/app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+RUN apt install tzdata
+RUN cp /usr/share/zoneinfo/America/Mexico_City /etc/localtime
+RUN echo "America/Mexico_City" >  /etc/timezone
+
 RUN apt-get -y update \
     && apt-get install -y \
         fonts-font-awesome \
@@ -20,5 +24,6 @@ RUN pip install -r requirements.txt
 
 COPY . /usr/src/app
 
-ENTRYPOINT [ "python" ]
-CMD ["manage.py", "run", "-h", "0.0.0.0"]
+RUN chmod +x /usr/src/app/entrypoint.sh
+
+ENTRYPOINT [ "/usr/src/app/entrypoint.sh" ]
