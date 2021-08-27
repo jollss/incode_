@@ -237,3 +237,12 @@ def send_sperow(datos):
             return False
     except:
         return False
+
+
+def pld_check(datos):
+    user=datos
+    cheked = db_session.query(ResultsIne).filter_by(user_id=user).first()    
+    if cheked==None:
+        return 0
+    else:
+        return cheked.status_ine_loads

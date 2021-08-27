@@ -43,6 +43,15 @@ def create_app():
             else:
                 return jsonify(success=False,response="Error!"), 400
 #-----------------------------
+
+    @app.route("/pldStatus", methods=('GET', 'POST'))
+    def PldStatus():
+        if request.method == "GET":
+            return False
+        else:
+            datos = request.get_json() 
+            check_status=pld_check(datos)
+            return jsonify(success=True,response=check_status), 200
     
     @app.errorhandler(Exception)
     def handle_exception(e):
