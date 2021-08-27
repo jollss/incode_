@@ -1,0 +1,10 @@
+Flask
+flask-sqlalchemy
+mysql-connector
+alembic
+sqlalchemy-utils
+pytz
+werkzeug
+unidecode
+requests
+gunicorn==20.0.4
