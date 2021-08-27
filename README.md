@@ -1,6 +1,6 @@
 # Caterpie
 
-<div style="text-align:center"><img src="https://img.pokemondb.net/artwork/vector/large/caterpie.png" width="250"/></div>
+<div style="text-align:center"><img src="https://img.pokemondb.net/artwork/vector/large/totodile.png" width="250"/></div>
 
 Caterpie es un repositorio bootstrap para iniciar proyectos / microservicios con Flask y Docker.
 
