@@ -1,4 +1,4 @@
-# Caterpie
+# Totodile
 
 <div style="text-align:center"><img src="https://img.pokemondb.net/artwork/vector/large/totodile.png" width="250"/></div>
 
