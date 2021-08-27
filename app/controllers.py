@@ -217,7 +217,6 @@ def send_qbB(atras="",user="",correo="",rid=""):
 
 
 def send_sperow(datos):
-    #us = db_session.query(ResultsIne).filter_by(user_id=datos['user']).first()
     try:
         if 'status' in datos:
             if datos['status']==False:     
