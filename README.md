@@ -2,31 +2,29 @@
 
 <div style="text-align:center"><img src="https://img.pokemondb.net/artwork/vector/large/totodile.png" width="250"/></div>
 
-Caterpie es un repositorio bootstrap para iniciar proyectos / microservicios con Flask y Docker.
+totodile es un Microserervicio para el proceso de pld.
 
 Permite inicializar con la estructura básica un proyecto con Flask + SQLAlchemy + Alembic + MySQL.
 
 ### *NO usa docker-compose*
 
 ## Uso
-
-1. Hacer fork del repositorio utilizando la opción 'Use this template'.
-2. Renombrar el repositorio.
-3. Crear la imagen
+Crear la imagen
+1. docker build -t totodile:ejmeplo .
 ```shell
 docker build -t image:version .
 ```
-4. Correr la imagen
+2. Correr la imagen
 
 Windows:
 ```
-docker run --rm -it --env-file=.env -v ${PWD}:/usr/src/app -p 5000:5000 --name caterpie contenedor image:version
+docker run --rm -it --env-file=.env_example -v ${PWD}:/usr/src/app -p 5009:5000 --name totodile  totodile:ejmeplo
 ```
 *NIX:
 ```
-docker run --rm -it --env-file=.env -v $(pwd):/usr/src/app -p 5000:5000 --name caterpie contenedor image:version
+docker run --rm -it --env-file=.env_example -v $(pwd):/usr/src/app -p 5009:5000 --name totodile  totodile:ejmeplo
 ```
-
+Comentarios:el .env_example remplazalo por .env para que no modifiques nada de los ejemplos y solo agrega en el gitignore el .env que utilices
 ## Licencia
 
 Cura Deuda 2020
