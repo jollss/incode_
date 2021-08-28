@@ -261,3 +261,52 @@ def send_economica(datos):
         return True
     except:
         return False
+
+
+def send_qb_datos(user):
+    res_ine=db_session.query(ResultsIne).filter_by(user_id=user).first()
+    if res_ine.rid_solicitud==0:
+        res_ine.status_ine_loads = 8
+        res_ine.mensaje_error="Sin rid de solicitud"
+        db_session.add(res_ine)
+        db_session.commit()
+        db_session.close()
+        #v={"email":res_ine.email_user,"actividad":res_ine.sub_nombre_economica}
+    else:
+        #v={"id":res_ine.rid_solicitud,"actividad":res_ine.sub_nombre_economica}
+    
+        act=str(res_ine.sub_nombre_economica)
+        v={'to':'bgrm6tt7q','data':[
+                {
+                '316':{'value':act},
+                '3':{'value':res_ine.rid_solicitud}
+                }
+                                    ]
+            }
+    USERTOKEN = os.environ.get('USERTOKEN')
+    QBR = os.environ.get('QBRealmHostname')
+    UserAgent = os.environ.get('UserAgent')
+
+    headers = {
+        'QB-Realm-Hostname':QBR,
+        'User-Agent':UserAgent,
+        'Authorization':'QB-USER-TOKEN {}'.format(USERTOKEN),
+        'Content-Type': "application/json"
+        }
+    QB = requests.post("https://api.quickbase.com/v1/records",json=v,headers=headers)
+    code=QB.status_code
+    
+    #QB = requests.post("https://www.workato.com/webhooks/rest/1b7fa5ec-105e-4422-ad07-4dd0af2c570b/carga-ine-cdd",json=v ,headers=headers)
+    code=QB.status_code
+    if code==200:
+        res_ine.status_ine_loads = 3
+        db_session.add(res_ine)
+        db_session.commit()
+        db_session.close()
+        return True
+    else:
+        res_ine.status_ine_loads = 2
+        db_session.add(res_ine)
+        db_session.commit()
+        db_session.close()
+        return False
