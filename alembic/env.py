@@ -10,7 +10,9 @@ from alembic import context
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option('sqlalchemy.url', os.environ.get('SQLALCHEMY_DATABASE_URI'))
+db_url_escaped = os.environ.get('SQLALCHEMY_DATABASE_URI').replace('%', '%%')
+config.set_main_option('sqlalchemy.url', db_url_escaped)
+#config.set_main_option('sqlalchemy.url', os.environ.get('SQLALCHEMY_DATABASE_URI'))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
