@@ -246,3 +246,18 @@ def pld_check(datos):
         return 0
     else:
         return cheked.status_ine_loads
+
+
+def send_economica(datos):
+    try:
+        result_ine=db_session.query(ResultsIne).filter_by(user_id=datos['user_id']).first()
+        actividad_economica=db_session.query(actividad_economica_sub_cat).filter_by(sub_clave_economica_id=datos['clave_economica_id']).first()
+        result_ine.sub_nombre_economica = actividad_economica.sub_nombre_economica
+        result_ine.sub_clave_economica_id = actividad_economica.sub_clave_economica_id
+        db_session.add(result_ine)
+        db_session.commit()
+        db_session.close()
+        send_qb_datos(datos['user_id'])
+        return True
+    except:
+        return False

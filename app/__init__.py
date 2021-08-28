@@ -44,6 +44,16 @@ def create_app():
                 return jsonify(success=False,response="Error!"), 400
 #-----------------------------
 
+    @app.route("/loads-actieco", methods=('GET', 'POST'))
+    def loadsActeco():
+        if request.method == "GET":
+            return False
+        else:
+            datos = request.get_json() 
+            ditto_eco=send_economica(datos)
+            datos={"datos":ditto_eco}
+            return datos
+
     @app.route("/pldStatus", methods=('GET', 'POST'))
     def PldStatus():
         if request.method == "GET":
