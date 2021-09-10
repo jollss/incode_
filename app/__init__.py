@@ -16,8 +16,21 @@ def create_app():
     def ping():
         return jsonify(success=True,response="pong!"), 200
 
+
+    @app.route("/loads-ine", methods=['POST'])
+    def loadsInes():
+        datos = request.get_json()
+        if 'status' in datos:
+            if datos['status']==True:
+                v=datos_mewtwo(datos)
+                if v==True:
+                    return jsonify(success=True), 200
+                else:
+                    return jsonify(success=False), 400
+                
+
 #---------------------------1 paso obtener la imagenes del ine front y back
-    @app.route("/loads-ine", methods=('GET', 'POST'))
+    """@app.route("/loads-ine", methods=('GET', 'POST'))
     def loadsIne():
         if request.method == "GET":
             return jsonify(success=True,response="Wrong"), 404
@@ -41,7 +54,7 @@ def create_app():
                 else:
                     return jsonify(success=False), 400                
             else:
-                return jsonify(success=False,response="Error!"), 400
+                return jsonify(success=False,response="Error!"), 400"""
 #-----------------------------
 
     @app.route("/loads-actieco", methods=('GET', 'POST'))
@@ -63,6 +76,19 @@ def create_app():
             check_status=pld_check(datos)
             return jsonify(success=True,response=check_status), 200
     
+    @app.route("/carga-inicial-actieco", methods=('GET', 'POST'))
+    def loadsInicialActeco():
+        if request.method == "GET":
+            return False
+        else:
+            datos = request.get_json() 
+            loadsinact=loads_inicial_actieco(datos)
+            return jsonify(success=True,response="pong!"), 200
+            #datos={"datos":ditto_eco}
+            #return datos
+
+
+
     @app.errorhandler(Exception)
     def handle_exception(e):
         return jsonify(success=False, error_message="{}".format(e)), 500

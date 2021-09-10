@@ -24,19 +24,17 @@ class ResultsIne(Base):
     sub_nombre_economica = Column(String(255))
     sub_clave_economica_id = Column(String(20))
     email_user = Column(String(255))
-    #front = Column(String(255))
-    #back = Column(String(255))
+    front = Column(String(255))
+    back = Column(String(255))
     mensaje_error = Column(String(255))
     rid_solicitud = Column(BigInteger, nullable=True)
     status_ine_loads = Column(Integer)#0-no ha cargado imagnes/1-cargo imagenes a QB/2-cargo imagenes-spearow-F/3-cargo imagenes-spearow-B/4-cargo actividad/9-sin datos para enviar
     #ruta_all = Column(String(255))
     created_at = Column(DateTime, nullable=True,default=datetime.datetime.now(tz=tz))  
 
-    def __init__(self, user_id,email_user,status_ine_loads,mensaje_error,rid_solicitud):
+    def __init__(self, user_id,email_user,rid_solicitud):
         self.user_id = user_id
         self.email_user = email_user
-        self.status_ine_loads = status_ine_loads
-        self.mensaje_error = mensaje_error
         self.rid_solicitud = rid_solicitud
         
         

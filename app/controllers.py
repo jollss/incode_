@@ -28,6 +28,67 @@ import io
 from os import remove
 
 
+def datos_mewtwo(datos):
+    e = db_session.query(ResultsIne).filter_by(user_id=datos['user']).first()
+    if e==None:
+        a = ResultsIne(
+            user_id=datos['user'],
+            email_user=datos['correo'],
+            rid_solicitud=datos['rid']
+        )
+        db_session.add(a)
+        db_session.commit()
+        db_session.close()
+    else:
+        e.email_user =datos['correo']
+        e.rid_solicitud=datos['rid']
+        db_session.add(e)
+        db_session.commit()
+        db_session.close()
+    SPEAROW_URI = os.environ.get('SPEAROW_URI')
+    headers = {'Content-Type': "application/json"}
+    body = datos['datos']
+    r = requests.post(SPEAROW_URI+"/api/v1/file/img",json=body ,headers=headers)
+    spearoowcodeF=r.status_code 
+    if spearoowcodeF==200:
+        json_data = r.json()
+        r=send_abra(json_data)
+        if r==True:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+def send_abra(data):
+    l = db_session.query(ResultsIne).filter_by(user_id=data['message']).first()
+    try:  
+        ABRA_URI = os.environ.get('ABRA_URI')
+        if 'imageF' in data['response']:
+            headers = {'Content-Type': "application/json"}
+            body = {"url":data['response']['imageF']}
+            g = requests.post(ABRA_URI+"/api/v1/url",json=body ,headers=headers)
+            abracode=g.status_code
+            if abracode==200:
+                gjson_data = g.json()
+                l.front =gjson_data['url']
+
+        if 'imageB' in data['response']:
+            headers = {'Content-Type': "application/json"}
+            body = {"url":data['response']['imageB']}
+            g = requests.post(ABRA_URI+"/api/v1/url",json=body ,headers=headers)
+            abracode=g.status_code
+            if abracode==200:
+                gjson_data = g.json()
+                l.back =gjson_data['url']
+        l.status_ine_loads=2
+        db_session.add(l)
+        db_session.commit()
+        return True
+    except:
+        return False
+
 def send_qbF(frente="",user="",correo="",rid=""):
     tam_frente=len(frente)
     d=datetime.datetime.now(tz=tz).strftime('%Y%m%d')
@@ -279,6 +340,8 @@ def send_qb_datos(user):
         v={'to':'bgrm6tt7q','data':[
                 {
                 '316':{'value':act},
+                '320':{'value':res_ine.front},
+                '321':{'value':res_ine.back},
                 '3':{'value':res_ine.rid_solicitud}
                 }
                                     ]
@@ -310,3 +373,82 @@ def send_qb_datos(user):
         db_session.commit()
         db_session.close()
         return False
+
+def loads_inicial_actieco(datos):
+    data=[]
+    for a in datos:        
+        e=actividad_economica(
+        clave_economica=a
+        )
+        db_session.add(e)
+        db_session.commit()
+        data.append({'id':e.id,'acti':a})
+    db_session.close()
+    dat={"dat":data,'datos':datos}
+    return carga_datos_cat(dat)
+    
+def carga_datos_cat(dat):
+    Privado=[]
+    Publico=[]
+    for a in dat['dat']:        
+        if a['acti']=='SECTOR PRIVADO':
+            for b in dat['datos']['SECTOR PRIVADO']:
+                nombre=str(b)
+                privado=actividad_economicaCat(
+                    cat_nombre_economica=nombre,
+                    cat_actividad_economica_id=a['id']
+                )
+                db_session.add(privado)
+                db_session.commit()
+                Privado.append({'id':privado.id,'cat_nombre':nombre})
+                #print(b,a['id'])
+            db_session.close()                
+        elif a['acti']=='SECTOR PÚBLICO':
+            for b in dat['datos']['SECTOR PÚBLICO']:
+                nombre=str(b)
+                publico=actividad_economicaCat(
+                    cat_nombre_economica=nombre,
+                    cat_actividad_economica_id=a['id']
+                )
+                db_session.add(publico)
+                db_session.commit()
+                Publico.append({'id':publico.id,'cat_nombre':nombre})
+                #print(b,a['id'])
+        
+            db_session.close()
+    da={"Privado":Privado,'Publico':Publico,'datos':dat['datos']}
+    return carga_datos_cat_sub(da)
+
+
+
+
+def carga_datos_cat_sub(da):
+    
+    for a in da['Privado']:            
+        nombre=str(a['cat_nombre'])
+        for b in da['datos']['SECTOR PRIVADO'][nombre]:
+            id=str(b['id'])
+            nombre=str(b['name'])
+            privado=actividad_economica_sub_cat(
+                    sub_nombre_economica=nombre,
+                    sub_clave_economica_id=id,
+                    sub_cat_actividad_economica_id=a['id']
+                )
+            db_session.add(privado)
+            db_session.commit()
+        db_session.close()
+            
+    for a in da['Publico']:            
+        nombre=str(a['cat_nombre'])
+        for b in da['datos']['SECTOR PÚBLICO'][nombre]:
+            id=str(b['id'])
+            nombre=str(b['name'])
+            publico=actividad_economica_sub_cat(
+                    sub_nombre_economica=nombre,
+                    sub_clave_economica_id=id,
+                    sub_cat_actividad_economica_id=a['id']
+                )
+            db_session.add(publico)
+            db_session.commit()
+        db_session.close()
+            #print("subcateogia",b['name'],b['id'],a['id'])
