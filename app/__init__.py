@@ -1,4 +1,5 @@
 from flask import Flask, current_app, jsonify, request, url_for, render_template
+from flask.wrappers import Response
 from werkzeug.exceptions import HTTPException, InternalServerError
 from app.controllers import *
 from app.database import db_session
@@ -27,6 +28,10 @@ def create_app():
                     return jsonify(success=True), 200
                 else:
                     return jsonify(success=False), 400
+            else:
+                return jsonify(success=False,reponse=datos), 400
+
+
                 
 
 #---------------------------1 paso obtener la imagenes del ine front y back
