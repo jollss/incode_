@@ -34,21 +34,21 @@ def datos_mewtwo(datos):
         a = ResultsIne(
             user_id=datos['user'],
             email_user=datos['correo'],
-            rid_solicitud=datos['rid']
+            rid_solicitud=datos['rid_solicitud']
         )
         db_session.add(a)
         db_session.commit()
         db_session.close()
     else:
         e.email_user =datos['correo']
-        e.rid_solicitud=datos['rid']
+        e.rid_solicitud=datos['rid_solicitud']
         db_session.add(e)
         db_session.commit()
         db_session.close()
     SPEAROW_URI = os.environ.get('SPEAROW_URI')
     headers = {'Content-Type': "application/json"}
-    body = datos['datos']
-    r = requests.post(SPEAROW_URI+"/api/v1/file/img",json=body ,headers=headers)
+    data={'user_id':datos['user'],'back_image':datos['back'],'front_image':datos['frente']}
+    r = requests.post(SPEAROW_URI+"/api/v1/file/img",json=data ,headers=headers)
     spearoowcodeF=r.status_code 
     if spearoowcodeF==200:
         json_data = r.json()
