@@ -346,6 +346,7 @@ def send_qb_datos(user):
                 }
                                     ]
             }
+        print("--",act)
     USERTOKEN = os.environ.get('USERTOKEN')
     QBR = os.environ.get('QBRealmHostname')
     UserAgent = os.environ.get('UserAgent')
@@ -361,6 +362,7 @@ def send_qb_datos(user):
     
     #QB = requests.post("https://www.workato.com/webhooks/rest/1b7fa5ec-105e-4422-ad07-4dd0af2c570b/carga-ine-cdd",json=v ,headers=headers)
     code=QB.status_code
+    print("---",code)
     if code==200:
         res_ine.status_ine_loads = 3
         db_session.add(res_ine)
