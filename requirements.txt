@@ -17,3 +17,4 @@ click
 Flask-Cors==3.0.9
 Flask-Celery-Helper
 Pillow
+newrelic==5.22.1.152
