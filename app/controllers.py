@@ -29,36 +29,39 @@ from os import remove
 
 
 def datos_mewtwo(datos):
-    e = db_session.query(ResultsIne).filter_by(user_id=datos['user']).first()
-    if e==None:
-        a = ResultsIne(
-            user_id=datos['user'],
-            email_user=datos['correo'],
-            rid_solicitud=datos['rid_solicitud']
-        )
-        db_session.add(a)
-        db_session.commit()
-        db_session.close()
-    else:
-        e.email_user =datos['correo']
-        e.rid_solicitud=datos['rid_solicitud']
-        db_session.add(e)
-        db_session.commit()
-        db_session.close()
-    SPEAROW_URI = os.environ.get('SPEAROW_URI')
-    headers = {'Content-Type': "application/json"}
-    data={'user_id':datos['user'],'back_image':datos['back'],'front_image':datos['frente']}
-    r = requests.post(SPEAROW_URI+"/api/v1/file/img",json=data ,headers=headers)
-    spearoowcodeF=r.status_code 
-    if spearoowcodeF==200:
-        json_data = r.json()
-        r=send_abra(json_data)
-        if r==True:
-            return True
+    try:
+        e = db_session.query(ResultsIne).filter_by(user_id=datos['user']).first()
+        if e==None:
+            a = ResultsIne(
+                user_id=datos['user'],
+                email_user=datos['correo'],
+                rid_solicitud=datos['rid_solicitud']
+            )
+            db_session.add(a)
+            db_session.commit()
+            db_session.close()
+        else:
+            e.email_user =datos['correo']
+            e.rid_solicitud=datos['rid_solicitud']
+            db_session.add(e)
+            db_session.commit()
+            db_session.close()
+        SPEAROW_URI = os.environ.get('SPEAROW_URI')
+        headers = {'Content-Type': "application/json"}
+        data={'user_id':datos['user'],'back_image':datos['back'],'front_image':datos['frente']}
+        r = requests.post(SPEAROW_URI+"/api/v1/file/img",json=data ,headers=headers)
+        spearoowcodeF=r.status_code 
+        if spearoowcodeF==200:
+            json_data = r.json()
+            r=send_abra(json_data)
+            if r==True:
+                return True
+            else:
+                return False
         else:
             return False
-    else:
-        return False
+    except Exception as e:
+        print(e)
 
 
 def send_abra(data):
