@@ -27,6 +27,7 @@ from PIL import Image
 import io
 from os import remove
 
+import traceback
 
 def datos_mewtwo(datos):
     try:
@@ -60,8 +61,8 @@ def datos_mewtwo(datos):
                 return False
         else:
             return False
-    except Exception as e:
-        print(e)
+    except:
+        traceback.print_exc()
 
 
 def send_abra(data):
