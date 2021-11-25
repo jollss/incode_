@@ -111,20 +111,27 @@ def send_qbF(frente="",user="",correo="",rid=""):
             imgf = imgf.replace("data:image/jpg;base64,", "")
             imgf = imgf.replace("data:image/gif;base64,", "")
             imgf = imgf.replace("data:image/heic;base64,", "")
-            datafrente={'to':'bgrm6tt7q','data':[{#'281':{'value':{'fileName':f"atras {result_ine.rid_solicitud}.jpeg" ,'data':back}},
-                '79':{'value':{'fileName':f"frente {rid}.{ext}",'data':imgf}},'3':{'value':rid}}] }
-            USERTOKEN = os.environ.get('USERTOKEN')
-            QBR = os.environ.get('QBRealmHostname')
-            UserAgent = os.environ.get('UserAgent')
+            FLASK_ENV = os.environ.get('FLASK_ENV')
+            if FLASK_ENV=='production':
 
-            headers = {
-                'QB-Realm-Hostname':QBR,
-                'User-Agent':UserAgent,
-                'Authorization':'QB-USER-TOKEN {}'.format(USERTOKEN),
-                'Content-Type': "application/json"
-                }
-            QBINeF = requests.post("https://api.quickbase.com/v1/records",json=datafrente,headers=headers)
-            codeF=QBINeF.status_code
+                datafrente={'to':'bgrm6tt7q','data':[{#'281':{'value':{'fileName':f"atras {result_ine.rid_solicitud}.jpeg" ,'data':back}},
+                    '79':{'value':{'fileName':f"frente {rid}.{ext}",'data':imgf}},'3':{'value':rid}}] }
+                USERTOKEN = os.environ.get('USERTOKEN')
+                QBR = os.environ.get('QBRealmHostname')
+                UserAgent = os.environ.get('UserAgent')
+
+                headers = {
+                    'QB-Realm-Hostname':QBR,
+                    'User-Agent':UserAgent,
+                    'Authorization':'QB-USER-TOKEN {}'.format(USERTOKEN),
+                    'Content-Type': "application/json"
+                    }
+                
+                QBINeF = requests.post("https://api.quickbase.com/v1/records",json=datafrente,headers=headers)
+                codeF=QBINeF.status_code
+            else:
+                codeF=200
+                rid=123
             us = db_session.query(ResultsIne).filter_by(user_id=user).first()
             if codeF==200:
                 if us is None:
@@ -205,20 +212,25 @@ def send_qbB(atras="",user="",correo="",rid=""):
             imgb = imgb.replace("data:image/jpg;base64,", "")
             imgb = imgb.replace("data:image/gif;base64,", "")
             imgb = imgb.replace("data:image/heic;base64,", "")
-            datafrente={'to':'bgrm6tt7q','data':[{#'79':{'value':{'fileName':f"atras {result_ine.rid_solicitud}.jpeg" ,'data':back}},
-                '281':{'value':{'fileName':f"atras {rid}.{ext}",'data':imgb}},'3':{'value':rid}}] }
-            USERTOKEN = os.environ.get('USERTOKEN')
-            QBR = os.environ.get('QBRealmHostname')
-            UserAgent = os.environ.get('UserAgent')
+            FLASK_ENV = os.environ.get('FLASK_ENV')
+            if FLASK_ENV=='production':
+                datafrente={'to':'bgrm6tt7q','data':[{#'79':{'value':{'fileName':f"atras {result_ine.rid_solicitud}.jpeg" ,'data':back}},
+                    '281':{'value':{'fileName':f"atras {rid}.{ext}",'data':imgb}},'3':{'value':rid}}] }
+                USERTOKEN = os.environ.get('USERTOKEN')
+                QBR = os.environ.get('QBRealmHostname')
+                UserAgent = os.environ.get('UserAgent')
 
-            headers = {
-                'QB-Realm-Hostname':QBR,
-                'User-Agent':UserAgent,
-                'Authorization':'QB-USER-TOKEN {}'.format(USERTOKEN),
-                'Content-Type': "application/json"
-                }
-            QBINeF = requests.post("https://api.quickbase.com/v1/records",json=datafrente,headers=headers)
-            codeF=QBINeF.status_code
+                headers = {
+                    'QB-Realm-Hostname':QBR,
+                    'User-Agent':UserAgent,
+                    'Authorization':'QB-USER-TOKEN {}'.format(USERTOKEN),
+                    'Content-Type': "application/json"
+                    }
+                QBINeF = requests.post("https://api.quickbase.com/v1/records",json=datafrente,headers=headers)
+                codeF=QBINeF.status_code
+            else:
+                codeF=200
+                rid=123
             us = db_session.query(ResultsIne).filter_by(user_id=user).first()
             if codeF==200:
                 if us is None:
@@ -317,8 +329,17 @@ def send_economica(datos):
         result_ine.sub_clave_economica_id = actividad_economica.sub_clave_economica_id
         db_session.add(result_ine)
         db_session.commit()
-        db_session.close()
-        send_qb_datos(datos['user_id'])
+        #db_session.close()
+        FLASK_ENV = os.environ.get('FLASK_ENV')
+        if FLASK_ENV=='production':
+            send_qb_datos(datos['user_id'])
+        else:
+            result_ine.status_ine_loads = 3
+            db_session.add(result_ine)
+            db_session.commit()
+
+        
+
         return True
     except:
         return False
@@ -346,7 +367,6 @@ def send_qb_datos(user):
                 }
                                     ]
             }
-        print("--",act)
     USERTOKEN = os.environ.get('USERTOKEN')
     QBR = os.environ.get('QBRealmHostname')
     UserAgent = os.environ.get('UserAgent')
@@ -358,11 +378,10 @@ def send_qb_datos(user):
         'Content-Type': "application/json"
         }
     QB = requests.post("https://api.quickbase.com/v1/records",json=v,headers=headers)
-    code=QB.status_code
-    
+    code=QB.status_code    
     #QB = requests.post("https://www.workato.com/webhooks/rest/1b7fa5ec-105e-4422-ad07-4dd0af2c570b/carga-ine-cdd",json=v ,headers=headers)
-    code=QB.status_code
-    print("---",code)
+    #code=QB.status_code
+    
     if code==200:
         res_ine.status_ine_loads = 3
         db_session.add(res_ine)

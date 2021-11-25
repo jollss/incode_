@@ -4,7 +4,7 @@ from werkzeug.exceptions import HTTPException, InternalServerError
 from app.controllers import *
 from app.database import db_session
 from flask_cors import CORS
-
+import newrelic.agent
 
 
 def create_app():
@@ -15,11 +15,17 @@ def create_app():
 
     @app.route("/ping", methods=['GET'])
     def ping():
+        print("entro a ping")
+        #newrelic.agent.record_exception()
+
+        newrelic.agent.record_exception(exc=None, value=None, tb=None, params={'hola':'hola'}, ignore_errors=[], application=None)
+
         return jsonify(success=True,response="pong!"), 200
 
 
     @app.route("/loads-ine", methods=['POST'])
     def loadsInes():
+        
         datos = request.get_json()
         if 'status' in datos:
             if datos['status']==True:
