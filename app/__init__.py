@@ -5,9 +5,27 @@ from app.controllers import *
 from app.database import db_session
 from flask_cors import CORS
 import newrelic.agent
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from sentry_sdk import capture_exception, capture_message
 
+
+def traces_sampler(sampling_context):
+    if os.environ.get('FLASK_ENV') == 'development':
+        return 1
+    else:
+        return 0.3
 
 def create_app():
+    sentry_sdk.init(
+    dsn="https://34bc7ac43cae484ba8cacff8bd791b84@sentry.curadeuda.com/12",
+    integrations=[FlaskIntegration(transaction_style='url'), SqlalchemyIntegration()],
+    environment=os.environ.get('FLASK_ENV'),
+    send_default_pii=True,
+    release='cyndaquil@latest',
+    traces_sampler=traces_sampler,
+    )
     app = Flask(__name__)
     app.config.from_object('app.config.Config')
     CORS(app)
@@ -16,10 +34,6 @@ def create_app():
     @app.route("/ping", methods=['GET'])
     def ping():
         print("entro a ping")
-        #newrelic.agent.record_exception()
-
-        newrelic.agent.record_exception(exc=None, value=None, tb=None, params={'hola':'hola'}, ignore_errors=[], application=None)
-
         return jsonify(success=True,response="pong!"), 200
 
 
@@ -102,10 +116,12 @@ def create_app():
 
     @app.errorhandler(Exception)
     def handle_exception(e):
+        capture_exception(e)
         return jsonify(success=False, error_message="{}".format(e)), 500
 
     @app.errorhandler(HTTPException)
     def handle_bad_request(e):
+        capture_exception(e)
         return jsonify(success=False, error_message="{}".format(e)), e.code
     
     @app.teardown_appcontext
