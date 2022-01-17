@@ -9,7 +9,6 @@ alembic
 pytz
 werkzeug
 requests
-gunicorn==20.0.4
 maxminddb-geolite2
 redis
 celery
