@@ -6,6 +6,7 @@ import string
 import requests
 import base64
 from flask import render_template,jsonify
+from sentry_sdk import capture_exception, capture_message
 from weasyprint import HTML
 from sqlalchemy.sql.expression import false
 sys.path = ['', '..'] + sys.path[1:]
@@ -61,7 +62,8 @@ def datos_mewtwo(datos):
                 return False
         else:
             return False
-    except:
+    except Exception as e:
+        capture_exception(e)
         traceback.print_exc()
 
 
@@ -90,7 +92,8 @@ def send_abra(data):
         db_session.add(l)
         db_session.commit()
         return True
-    except:
+    except Exception as e:
+        capture_exception(e)
         return False
 
 def send_qbF(frente="",user="",correo="",rid=""):
@@ -312,7 +315,8 @@ def send_sperow(datos):
                     return False
         else:
             return False
-    except:
+    except Exception as e:
+        capture_exception(e)
         return False
 
 
@@ -345,7 +349,8 @@ def send_economica(datos):
         
 
         return True
-    except:
+    except Exception as e:
+        capture_exception(e)
         return False
 
 
