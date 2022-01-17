@@ -36,7 +36,7 @@ class ResultsIne(Base):
         self.user_id = user_id
         self.email_user = email_user
         self.rid_solicitud = rid_solicitud
-        
+        self.created_at = datetime.datetime.now(tz=tz)
         
 
     def __repr__(self):
