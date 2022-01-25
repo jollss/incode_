@@ -111,7 +111,14 @@ def create_app():
             return jsonify(success=True,response="pong!"), 200
             #datos={"datos":ditto_eco}
             #return datos
-
+    
+    @app.route("/act_eco/<user_id>", methods=['GET'])
+    def get_act_eco(user_id):
+        act_name = get_nombre_act_economica(user_id)
+        if act_name:
+            return jsonify(success=True,response=act_name), 200
+        else:
+            return jsonify(success=False,response="No existe"), 404
 
 
     @app.errorhandler(Exception)
