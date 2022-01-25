@@ -15,7 +15,7 @@ import datetime
 from base64 import b64encode
 
 from werkzeug.security import check_password_hash, generate_password_hash
-from sqlalchemy.orm.exc import NoResultFound 
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from app.models import *
 
 import calendar
@@ -482,3 +482,14 @@ def carga_datos_cat_sub(da):
             db_session.commit()
         db_session.close()
             #print("subcateogia",b['name'],b['id'],a['id'])
+
+
+def get_nombre_act_economica(user_id):
+    try:
+        data = db_session.query(ResultsIne).filter(ResultsIne.user_id==user_id).one()
+        return data.sub_nombre_economica
+    except MultipleResultsFound:
+        data = db_session.query(ResultsIne).filter(ResultsIne.user_id==user_id).order_by(ResultsIne.created_at.desc()).first()
+        return data.sub_nombre_economica
+    except NoResultFound:
+        return None
