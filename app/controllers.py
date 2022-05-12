@@ -494,6 +494,9 @@ def webhook_handler(data):
     validation_id = webhook.get_validation_id()
     if validation_id:
         fill_validation(validation_id)
+    check_id = webhook.get_check_id()
+    if check_id:
+        fill_check(check_id)
     
     
 
@@ -507,7 +510,7 @@ def fill_id(hook:HookLog):
             old.validation_id = hook.get_ids().validation_id
         elif hook.get_ids().check_id:
             old = db_session.query(ProcessID).filter(ProcessID.proccess_id == hook.get_ids().process_id).first()
-            old.check_id = hook.get_ids().check_id
+            old.first_check_id = hook.get_ids().check_id
 
 
 def fill_validation(validation_id:str):
@@ -528,4 +531,16 @@ def fill_validation(validation_id:str):
                 for value in values:
                     validation_documents = ValidationDocument(validation_id, **value)
                     db_session.add(validation_documents)
+        db_session.commit()
+
+
+def fill_check(check_id:str):
+    headers = {
+        "Truora-API-Key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50X2lkIjoiIiwiYWRkaXRpb25hbF9kYXRhIjoie30iLCJjbGllbnRfaWQiOiJUQ0lmYTc0NGRhMDVjMjcxNzdlMWQ4ZWRkMjA2MmY4ZjkwMyIsImV4cCI6MzIyODMyMjU2MywiZ3JhbnQiOiIiLCJpYXQiOjE2NTE1MjI1NjMsImlzcyI6Imh0dHBzOi8vY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vdXMtZWFzdC0xX1Q1dzZ2SUpLciIsImp0aSI6IjcyNjA4ZDc5LTJlMDYtNDE4Ni1iYjA3LTE4M2Q0OWUxZDBmYyIsImtleV9uYW1lIjoiY2RkX3Rlc3QiLCJrZXlfdHlwZSI6ImJhY2tlbmQiLCJ1c2VybmFtZSI6ImN1cmFkZXVkYS1jZGRfdGVzdCJ9.wEzFU-K8Ir7kl1kA_w-aa4xvMXlCsqBQYRVIXAcp9zg",
+        # "Truora-API-Key": os.environ.get('TruoraAPIKey'),
+    }
+    truora_info = requests.get(f"https://api.checks.truora.com/v1/checks/{check_id}", headers=headers)
+    if truora_info.status_code == 200:
+        check = Check(**truora_info.json()['check'])
+        db_session.add(check)
         db_session.commit()

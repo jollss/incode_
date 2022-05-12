@@ -143,7 +143,7 @@ class HookLog(Base):
                 return ids(True, False, self.object['process_id'], self.object['account_id'], None, None)
         if self.event_action == 'succeeded':
             if self.event_type == 'document_validation':
-                return ids(False, False, self.object['identity_process_id'], None, self.object['details']['background_check']['check_id'])
+                return ids(False, False, self.object['identity_process_id'], None, None,self.object['details']['background_check']['check_id'])
         
     def get_validation_id(self):
         if self.event_type == 'document_validation':
@@ -287,7 +287,6 @@ class ValidationDocument(Base):
                 if value is not None:
                     setattr(self, key, value)
 
-json = {"check":{"check_id":"CHK917c12fde36ce409f9f1a9f2a408eafa","cic":"182327302","citizen_id":"103263364","company_summary":{"company_status":"not_found","result":"skipped"},"country":"MX","creation_date":"2022-05-11T22:29:25.481573931Z","date_of_birth":"1997-07-03T00:00:00Z","document_recognition_id":"DCR464525dbd36f0b7b4743da1f8f88729c","elector_key":"TMMJDN97070321H100","expedition_date":"2018-01-01T00:00:00Z","issue_date":"2018-01-01T00:00:00Z","first_name":"DANIEL","name_score":1,"id_score":1,"last_name":"TEMALATZI MOJICA","ocr":"1027103263364","score":1,"scores":[{"data_set":"document_validation","severity":"none","score":1,"result":"found","by_id":{"result":"found","score":1,"severity":"none"},"by_name":{"result":"ignored","score":1,"severity":"unknown"}}],"status":"completed","statuses":[{"database_id":"DBI1efc3f0c4d7b5d8c4c8dcc0c630f2bb963d98b1b","database_name":"Instituto Nacional Electoral","data_set":"document_validation","status":"completed"},{"database_id":"DBIe8148185b2a76adcf5183ab1fcf2b812b99f6b0a","database_name":"Registro Nacional de Población","data_set":"document_validation","status":"completed"},{"database_id":"DBIee62ad89459f9386283875aa08377a0387b37ad2","database_name":"Registro Nacional de Población - RENAPO","data_set":"document_validation","status":"completed"}],"summary":{"date_of_birth":"1997-07-03T00:00:00Z","gender":"male","identity_status":"found","names_found":[{"first_name":"DANIEL","last_name":"TEMALATZI MOJICA","count":2}],"result":"skipped"},"update_date":"2022-05-11T22:30:39Z","vehicle_summary":{"result":"skipped","vehicle_status":"not_found"},"national_id":"TEMD970703HPLMJN05","type":"document-validation"},"details":"/v1/checks/CHK917c12fde36ce409f9f1a9f2a408eafa/details","self":"/v1/checks/CHK917c12fde36ce409f9f1a9f2a408eafa"}
 class Check(Base):
     __tablename__ = 'checks'
     id = Column(String(255), primary_key=True)
@@ -314,6 +313,7 @@ class Check(Base):
     update_date = Column(DateTime)
     vehicle_summary = Column(JSONType)
     national_id = Column(String(255))
+    owner_document_type = Column(String(255))
     type = Column(String(255))
     
     def __init__(self,**kwargs):
