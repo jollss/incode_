@@ -1,4 +1,6 @@
 import enum
+import json
+from struct import unpack
 import uuid
 import hashlib
 import datetime
@@ -6,12 +8,13 @@ import pytz
 import random
 import string
 import unidecode
-
-from sqlalchemy import Column, String, Text, DateTime, Date, ForeignKey, Boolean, Enum, Integer, BigInteger, SmallInteger,LargeBinary
+from collections import namedtuple
+from sqlalchemy import Column, String, Text, DateTime, Date, ForeignKey, Boolean, Enum, Integer, BigInteger, SmallInteger,LargeBinary, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import NoResultFound 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy_utils import UUIDType
+from sqlalchemy_utils import UUIDType, JSONType, IPAddressType
+from dateutil.parser import parse
 
 from app.database import Base, db_session
 
@@ -106,4 +109,219 @@ class actividad_economica_sub_cat(Base):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 if value is not None:
+                    setattr(self, key, value)
+
+
+class HookLog(Base):
+    __tablename__ = 'hook_logs'
+    id = Column(UUIDType(binary=False), primary_key=True, default=uuid.uuid4)
+    event_type = Column(String(255))
+    event_action = Column(String(255))
+    object = Column(JSONType)
+    version = Column(Float)
+    timestamp = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=True,default=datetime.datetime.now(tz=tz))
+    updated_at = Column(DateTime, nullable=True,default=datetime.datetime.now(tz=tz))
+    
+    def __init__(self, event_type, event_action, object, version, timestamp):
+        self.event_type = event_type
+        self.event_action = event_action
+        self.object = object
+        self.version = version
+        self.timestamp = timestamp
+        self.created_at = datetime.datetime.now(tz=tz)
+        self.updated_at = datetime.datetime.now(tz=tz)
+    
+    def get_ids(self):
+        ids = namedtuple('ids', 'create update process_id account_id validation_id check_id')
+        if self.event_action == 'created':
+            print('created')
+            if self.event_type == 'document_validation':
+                return ids(False, True, self.object['identity_process_id'], None, self.object['validation_id'], None)
+            if self.event_type == 'identity_process':
+                print('identity_process')
+                return ids(True, False, self.object['process_id'], self.object['account_id'], None, None)
+        if self.event_action == 'succeeded':
+            if self.event_type == 'document_validation':
+                return ids(False, False, self.object['identity_process_id'], None, self.object['details']['background_check']['check_id'])
+        
+    def get_validation_id(self):
+        if self.event_type == 'document_validation':
+            if self.event_action == 'succeeded' or self.event_action == 'failed':
+                return self.object['validation_id']
+            
+    def get_check_id(self):
+        if self.event_type == 'document_validation':
+            if self.event_action == 'succeeded':
+                return self.object['details']['background_check']['check_id']
+
+
+class ProcessID(Base):
+    __tablename__ = 'process_ids'
+    id = Column(UUIDType(binary=False), primary_key=True, default=uuid.uuid4)
+    proccess_id = Column(String(255), index=True)
+    account_id = Column(String(255), index=True)
+    first_check_id = Column(String(255), index=True)
+    last_check_id = Column(String(255), index=True)
+    validation_id = Column(String(255), index=True)
+    user_id = Column(UUIDType(binary=False))
+    created_at = Column(DateTime, nullable=True,default=datetime.datetime.now(tz=tz))
+    updated_at = Column(DateTime, nullable=True,default=datetime.datetime.now(tz=tz))
+    
+    def __init__(self,**kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                if value is not None:
+                    setattr(self, key, value)
+        self.created_at = datetime.datetime.now(tz=tz)
+        self.updated_at = datetime.datetime.now(tz=tz)
+    
+    
+    def update(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                if value is not None:
+                    setattr(self, key, value)
+                    self.updated_at = datetime.datetime.now(tz=tz)
+        
+
+class DigitalId(Base):
+    __tablename__ = 'digital_ids'
+    id = Column(String(255), primary_key=True)
+    status = Column(String(255))
+    creation_date = Column(DateTime, nullable=True)
+    update_date = Column(DateTime)
+    
+    def __init__(self, proccess_id, status, creation_date, update_date):
+        self.proccess_id = proccess_id
+        self.status = status
+        self.creation_date = creation_date
+        self.update_date = update_date
+
+
+class Validation(Base):
+    __tablename__ = 'validations'
+    id = Column(String(255), primary_key=True)
+    ip_address = Column(IPAddressType, nullable=True)
+    type = Column(String(255), nullable=True)
+    validation_status = Column(String(255), nullable=True)
+    creation_date = Column(DateTime, nullable=True)
+    declined_reason = Column(String(255), nullable=True)
+    failure_reason = Column(String(255), nullable=True)
+    # validation_detail = Column(UUIDType(binary=False), ForeignKey('validation_details.id'))
+    # validation_document = Column(UUIDType(binary=False), ForeignKey('validation_documents.id'))
+    attachment_status = Column(String(255), nullable=True)
+    retry_of_id = Column(String(255))
+    
+    def __init__(self, **kwargs):
+        if 'validation_id' in kwargs:
+            self.id = kwargs['validation_id']
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                if value is not None:
+                    if 'creation_date' in key:
+                        # value = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.Z')
+                        value = parse(value, ignoretz=True)
+                        # value = datetime.datetime.fromisoformat(value)
+                    setattr(self, key, value)
+
+
+class ValidationDetail(Base):
+    __tablename__ = 'validation_details'
+    id = Column(UUIDType(binary=False), primary_key=True, default=uuid.uuid4)
+    validation_id = Column(String(255), ForeignKey('validations.id'))
+    country = Column(String(255))
+    creation_date = Column(DateTime)
+    date_of_birth = Column(Date)
+    document_number = Column(String(255))
+    document_type = Column(String(255))
+    expiration_date = Column(DateTime)
+    gender = Column(String(255))
+    issue_date = Column(DateTime)
+    last_name = Column(String(255))
+    machine_readable = Column(String(255))
+    municipality = Column(Integer)
+    municipality_name = Column(String(255))
+    state = Column(Integer)
+    state_name = Column(String(255))
+    locality = Column(Integer)
+    section = Column(Integer)
+    elector_key = Column(String(255))
+    ocr = Column(String(255))
+    cic = Column(String(255))
+    citizen_id = Column(String(255))
+    name = Column(String(255))
+    registration_date = Column(DateTime)
+    residence_address = Column(String(255))
+    update_date = Column(DateTime)
+    front_url = Column(String(255))
+    back_url = Column(String(255))
+    
+    def __init__(self,validation_id=None, **kwargs):
+        self.validation_id = validation_id
+        if 'mexico_document' in kwargs:
+            kwargs.update(**kwargs['mexico_document'])
+        print(json.dumps(kwargs, indent=4))
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                if value is not None:
+                    if 'date' in key:
+                        value = parse(value, ignoretz=True)
+                    setattr(self, key, value)
+
+
+class ValidationDocument(Base):
+    __tablename__ = 'validation_documents'
+    id = Column(UUIDType(binary=False), primary_key=True, default=uuid.uuid4)
+    validation_id = Column(String(255), ForeignKey('validations.id'))
+    validation_name = Column(String(255))
+    result = Column(String(255))
+    validation_type = Column(String(255))
+    message = Column(String(255))
+    manually_reviewed = Column(Boolean)
+    
+    def __init__(self,validation_id=None, **kwargs):
+        self.validation_id = validation_id
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                if value is not None:
+                    setattr(self, key, value)
+
+json = {"check":{"check_id":"CHK917c12fde36ce409f9f1a9f2a408eafa","cic":"182327302","citizen_id":"103263364","company_summary":{"company_status":"not_found","result":"skipped"},"country":"MX","creation_date":"2022-05-11T22:29:25.481573931Z","date_of_birth":"1997-07-03T00:00:00Z","document_recognition_id":"DCR464525dbd36f0b7b4743da1f8f88729c","elector_key":"TMMJDN97070321H100","expedition_date":"2018-01-01T00:00:00Z","issue_date":"2018-01-01T00:00:00Z","first_name":"DANIEL","name_score":1,"id_score":1,"last_name":"TEMALATZI MOJICA","ocr":"1027103263364","score":1,"scores":[{"data_set":"document_validation","severity":"none","score":1,"result":"found","by_id":{"result":"found","score":1,"severity":"none"},"by_name":{"result":"ignored","score":1,"severity":"unknown"}}],"status":"completed","statuses":[{"database_id":"DBI1efc3f0c4d7b5d8c4c8dcc0c630f2bb963d98b1b","database_name":"Instituto Nacional Electoral","data_set":"document_validation","status":"completed"},{"database_id":"DBIe8148185b2a76adcf5183ab1fcf2b812b99f6b0a","database_name":"Registro Nacional de Población","data_set":"document_validation","status":"completed"},{"database_id":"DBIee62ad89459f9386283875aa08377a0387b37ad2","database_name":"Registro Nacional de Población - RENAPO","data_set":"document_validation","status":"completed"}],"summary":{"date_of_birth":"1997-07-03T00:00:00Z","gender":"male","identity_status":"found","names_found":[{"first_name":"DANIEL","last_name":"TEMALATZI MOJICA","count":2}],"result":"skipped"},"update_date":"2022-05-11T22:30:39Z","vehicle_summary":{"result":"skipped","vehicle_status":"not_found"},"national_id":"TEMD970703HPLMJN05","type":"document-validation"},"details":"/v1/checks/CHK917c12fde36ce409f9f1a9f2a408eafa/details","self":"/v1/checks/CHK917c12fde36ce409f9f1a9f2a408eafa"}
+class Check(Base):
+    __tablename__ = 'checks'
+    id = Column(String(255), primary_key=True)
+    cic = Column(String(255))
+    citizen_id = Column(String(255))
+    company_summary = Column(JSONType)
+    country = Column(String(255))
+    creation_date = Column(DateTime)
+    date_of_birth = Column(Date)
+    document_recognition_id = Column(String(255))
+    elector_key = Column(String(255))
+    expedition_date = Column(DateTime)
+    issue_date = Column(DateTime)
+    first_name = Column(String(255))
+    name_score = Column(Integer)
+    id_score = Column(Integer)
+    last_name = Column(String(255))
+    ocr = Column(String(255))
+    score = Column(Integer)
+    scores = Column(JSONType)
+    status = Column(String(255))
+    statuses = Column(JSONType)
+    summary = Column(JSONType)
+    update_date = Column(DateTime)
+    vehicle_summary = Column(JSONType)
+    national_id = Column(String(255))
+    type = Column(String(255))
+    
+    def __init__(self,**kwargs):
+        if 'check_id' in kwargs:
+            self.id = kwargs['check_id']
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                if value is not None:
+                    if 'date' in key:
+                        value = parse(value, ignoretz=True)
                     setattr(self, key, value)

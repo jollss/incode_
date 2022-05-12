@@ -19,3 +19,4 @@ Pillow
 newrelic==5.22.1.152
 gunicorn
 sentry-sdk[flask]
+python-dateutil

@@ -23,8 +23,8 @@ def create_app():
     integrations=[FlaskIntegration(transaction_style='url'), SqlalchemyIntegration()],
     environment=os.environ.get('FLASK_ENV'),
     send_default_pii=True,
-    release='cyndaquil@latest',
-    traces_sampler=traces_sampler,
+    # release='cyndaquil@latest',
+    traces_sample_rate=1
     )
     app = Flask(__name__)
     app.config.from_object('app.config.Config')
@@ -111,12 +111,20 @@ def create_app():
             return jsonify(success=True,response="pong!"), 200
             #datos={"datos":ditto_eco}
             #return datos
+            
+    
+    @app.route("/webhook", methods=['POST'])
+    def webhook_endpoint():
+        datos = request.get_json()
+        webhook_handler(datos)
+        return jsonify(success=True), 200
 
 
 
     @app.errorhandler(Exception)
     def handle_exception(e):
         capture_exception(e)
+        traceback.print_exc()
         return jsonify(success=False, error_message="{}".format(e)), 500
 
     @app.errorhandler(HTTPException)

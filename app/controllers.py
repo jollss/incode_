@@ -11,7 +11,7 @@ from weasyprint import HTML
 from sqlalchemy.sql.expression import false
 sys.path = ['', '..'] + sys.path[1:]
 import datetime
-
+from dateutil.parser import parse
 from base64 import b64encode
 
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -482,3 +482,50 @@ def carga_datos_cat_sub(da):
             db_session.commit()
         db_session.close()
             #print("subcateogia",b['name'],b['id'],a['id'])
+
+
+def webhook_handler(data):
+    event = data['events'][0]
+    date = datetime.datetime.strptime(event['timestamp'], '%Y-%m-%dT%H:%M:%S%fZ')
+    webhook = HookLog(event['event_type'], event['event_action'],event['object'],event['version'],date)
+    db_session.add(webhook)
+    fill_id(webhook)
+    db_session.commit()
+    validation_id = webhook.get_validation_id()
+    if validation_id:
+        fill_validation(validation_id)
+    
+    
+
+def fill_id(hook:HookLog):
+    if hook.get_ids():
+        if hook.get_ids().create:
+            ids = ProcessID(proccess_id=hook.get_ids().process_id, account_id=hook.get_ids().account_id)
+            db_session.add(ids)
+        elif hook.get_ids().update:
+            old = db_session.query(ProcessID).filter(ProcessID.proccess_id == hook.get_ids().process_id).first()
+            old.validation_id = hook.get_ids().validation_id
+        elif hook.get_ids().check_id:
+            old = db_session.query(ProcessID).filter(ProcessID.proccess_id == hook.get_ids().process_id).first()
+            old.check_id = hook.get_ids().check_id
+
+
+def fill_validation(validation_id:str):
+    headers = {
+        "Truora-API-Key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50X2lkIjoiIiwiYWRkaXRpb25hbF9kYXRhIjoie30iLCJjbGllbnRfaWQiOiJUQ0lmYTc0NGRhMDVjMjcxNzdlMWQ4ZWRkMjA2MmY4ZjkwMyIsImV4cCI6MzIyODMyMjU2MywiZ3JhbnQiOiIiLCJpYXQiOjE2NTE1MjI1NjMsImlzcyI6Imh0dHBzOi8vY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vdXMtZWFzdC0xX1Q1dzZ2SUpLciIsImp0aSI6IjcyNjA4ZDc5LTJlMDYtNDE4Ni1iYjA3LTE4M2Q0OWUxZDBmYyIsImtleV9uYW1lIjoiY2RkX3Rlc3QiLCJrZXlfdHlwZSI6ImJhY2tlbmQiLCJ1c2VybmFtZSI6ImN1cmFkZXVkYS1jZGRfdGVzdCJ9.wEzFU-K8Ir7kl1kA_w-aa4xvMXlCsqBQYRVIXAcp9zg",
+        # "Truora-API-Key": os.environ.get('TruoraAPIKey'),
+    }
+    truora_info = requests.get(f"https://api.validations.truora.com/v1/validations/{validation_id}", headers=headers)
+    if truora_info.status_code == 200:
+        validation = Validation(**truora_info.json())
+        validation_details = ValidationDetail(validation_id, **truora_info.json()['details']['document_details'])
+        valid_documents = truora_info.json()['details'].get('document_validations')
+        db_session.add(validation)
+        db_session.commit()
+        db_session.add(validation_details)
+        if valid_documents:
+            for _, values in valid_documents.items():
+                for value in values:
+                    validation_documents = ValidationDocument(validation_id, **value)
+                    db_session.add(validation_documents)
+        db_session.commit()
