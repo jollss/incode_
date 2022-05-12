@@ -309,8 +309,8 @@ class ValidationDetail(Base):
     registration_date = Column(DateTime)
     residence_address = Column(String(255))
     update_date = Column(DateTime)
-    front_url = Column(String(255))
-    back_url = Column(String(255))
+    front_url = Column(Text)
+    back_url = Column(Text)
 
     def __init__(self, validation_id=None, **kwargs):
         self.validation_id = validation_id

@@ -637,15 +637,8 @@ def fill_check(check_id: str):
 def download_images(process_id: str):
     front_url = None
     back_url = None
-    validation_id = (
-        db_session.query(ProcessID)
-        .filter(ProcessID.proccess_id == process_id)
-        .first()
-        .validation_id
-    )
-    process = (
-        db_session.query(ProcessID).filter(ProcessID.proccess_id == process_id).first()
-    )
+    validation_id = db_session.query(ProcessID).filter(ProcessID.proccess_id == process_id, ProcessID.validation_id != None).first().validation_id
+    process = db_session.query(ProcessID).filter(ProcessID.proccess_id == process_id).first()
     if process:
         headers = {
             "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
