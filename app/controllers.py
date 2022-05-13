@@ -1,4 +1,5 @@
 # import logging
+from io import BytesIO
 import os
 
 # import pytz
@@ -34,7 +35,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from app.database import db_session
 from app.models import *
 
-# from PIL import Image
+from PIL import Image
 # import io
 # from os import remove
 
@@ -686,8 +687,8 @@ def link_user_to_process(process_id: str, user_id: str, account_id: str):
         return False
 
 
-@celery.task()
-def download_images(validation_id: str, user_id: str):
+@celery.task(bind=True)
+def download_images(self,validation_id: str, user_id: str, process_id: str=None):
     to_mewtwo_data = {}
     validation_details = (
         db_session.query(ValidationDetail)
@@ -700,8 +701,8 @@ def download_images(validation_id: str, user_id: str):
         front_image = requests.get(front_url)
         back_image = requests.get(back_url)
         if front_image.status_code == 200 and back_image.status_code == 200:
-            image_base64_front = base64.b64encode(front_image.content).decode("utf-8")
-            image_base64_back = base64.b64encode(back_image.content).decode("utf-8")
+            image_base64_front = compress_image_b64(base64.b64encode(front_image.content).decode("utf-8"))
+            image_base64_back = compress_image_b64(base64.b64encode(back_image.content).decode("utf-8"))
             to_mewtwo_data = {
                 "front_image": image_base64_front,
                 "back_image": image_base64_back,
@@ -709,7 +710,9 @@ def download_images(validation_id: str, user_id: str):
             }
             return to_mewtwo_data
         else:
-            return None
+            get_link_images(process_id)
+            self.retry(countdown=60)
+    return None
 
 
 @celery.task()
@@ -723,3 +726,14 @@ def mewtwo_progress_pld(data):
         f"{os.environ.get('MEWTOW_URI')}/loadsImagesIne", json=data_to_send
     )
     return True
+
+
+def compress_image_b64(b64_image):
+    image_data = base64.b64decode(b64_image)
+    image_data = Image.open(BytesIO(image_data))
+    image_data.save(
+        BytesIO(), format="JPEG", quality=50, optimize=True, progressive=True
+    )
+    image_data = image_data.tobytes()
+    image_data = base64.b64encode(image_data).decode("utf-8")
+    return image_data

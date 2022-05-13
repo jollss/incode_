@@ -126,7 +126,7 @@ def create_app():
     def link_process():
         datos = request.get_json()
         process = link_user_to_process(**datos)
-        download_images.apply_async((process.validation_id, process.user_id), link=mewtwo_progress_pld.s())
+        download_images.apply_async((process.validation_id, process.user_id, process.proccess_id), link=mewtwo_progress_pld.s())
         return jsonify(success=True), 200
 
 
