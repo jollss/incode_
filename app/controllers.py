@@ -1,3 +1,4 @@
+# import logging
 import os
 
 # import pytz
@@ -566,7 +567,7 @@ def webhook_handler(data):
         fill_check.delay(check_id)
     proccess_id = webhook.detone_download()
     if proccess_id:
-        download_images.delay(proccess_id)
+        get_link_images.delay(proccess_id)
 
 
 def fill_id(hook: HookLog):
@@ -634,11 +635,18 @@ def fill_check(check_id: str):
 
 
 @celery.task()
-def download_images(process_id: str):
+def get_link_images(process_id: str):
     front_url = None
     back_url = None
-    validation_id = db_session.query(ProcessID).filter(ProcessID.proccess_id == process_id, ProcessID.validation_id != None).first().validation_id
-    process = db_session.query(ProcessID).filter(ProcessID.proccess_id == process_id).first()
+    validation_id = (
+        db_session.query(ProcessID)
+        .filter(ProcessID.proccess_id == process_id, ProcessID.validation_id != None)
+        .first()
+        .validation_id
+    )
+    process = (
+        db_session.query(ProcessID).filter(ProcessID.proccess_id == process_id).first()
+    )
     if process:
         headers = {
             "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
@@ -654,8 +662,64 @@ def download_images(process_id: str):
                 back_url = truora_json.get("validations")[0].get("reverse_image")
                 db_session.query(ValidationDetail).filter(
                     ValidationDetail.validation_id == validation_id
-                ).update({"front_url": front_url, "back_url": back_url}, synchronize_session=False)
+                ).update(
+                    {"front_url": front_url, "back_url": back_url},
+                    synchronize_session=False,
+                )
                 db_session.commit()
                 return True
         else:
             return False
+
+
+def link_user_to_process(process_id: str, user_id: str, account_id: str):
+    process = (
+        db_session.query(ProcessID)
+        .filter(ProcessID.proccess_id == process_id, ProcessID.account_id == account_id)
+        .first()
+    )
+    if process:
+        process.user_id = user_id
+        db_session.commit()
+        return process
+    else:
+        return False
+
+
+@celery.task()
+def download_images(validation_id: str, user_id: str):
+    to_mewtwo_data = {}
+    validation_details = (
+        db_session.query(ValidationDetail)
+        .filter(ValidationDetail.validation_id == validation_id)
+        .first()
+    )
+    front_url = validation_details.front_url
+    back_url = validation_details.back_url
+    if front_url and back_url:
+        front_image = requests.get(front_url)
+        back_image = requests.get(back_url)
+        if front_image.status_code == 200 and back_image.status_code == 200:
+            image_base64_front = base64.b64encode(front_image.content).decode("utf-8")
+            image_base64_back = base64.b64encode(back_image.content).decode("utf-8")
+            to_mewtwo_data = {
+                "front_image": image_base64_front,
+                "back_image": image_base64_back,
+                "user_id": user_id,
+            }
+            return to_mewtwo_data
+        else:
+            return None
+
+
+@celery.task()
+def mewtwo_progress_pld(data):
+    data_to_send = {
+        "front_image": data["front_image"],
+        "back_image": data["back_image"],
+        "user_id": data["user_id"],
+    }
+    mewtwo_info = requests.post(
+        f"{os.environ.get('MEWTOW_URI')}/loadsImagesIne", json=data_to_send
+    )
+    return True

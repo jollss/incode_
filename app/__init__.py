@@ -1,3 +1,4 @@
+# import logging
 from flask import Flask, current_app, jsonify, request, url_for, render_template
 from flask.wrappers import Response
 from werkzeug.exceptions import HTTPException, InternalServerError
@@ -29,6 +30,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object('app.config.Config')
     CORS(app)
+    # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',filename='./logs/app.log')
 
 
     @app.route("/ping", methods=['GET'])
@@ -118,7 +120,14 @@ def create_app():
         datos = request.get_json()
         webhook_handler(datos)
         return jsonify(success=True), 200
-
+    
+    
+    @app.route("/link_process", methods=['POST'])
+    def link_process():
+        datos = request.get_json()
+        process = link_user_to_process(**datos)
+        download_images.apply_async((process.validation_id, process.user_id), link=mewtwo_progress_pld.s())
+        return jsonify(success=True), 200
 
 
     @app.errorhandler(Exception)
