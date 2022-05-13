@@ -711,7 +711,7 @@ def download_images(self,validation_id: str, user_id: str, process_id: str=None)
             return to_mewtwo_data
         else:
             get_link_images(process_id)
-            self.retry(countdown=60)
+            self.retry(countdown=10)
     return None
 
 
@@ -731,6 +731,7 @@ def mewtwo_progress_pld(data):
 def compress_image_b64(b64_image):
     image_data = base64.b64decode(b64_image)
     image_data = Image.open(BytesIO(image_data))
+    image_data = image_data.convert('RGB')
     image_data.save(
         BytesIO(), format="JPEG", quality=50, optimize=True, progressive=True
     )
