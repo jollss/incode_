@@ -48,6 +48,7 @@ def datos_mewtwo(datos):
                 user_id=datos["user"],
                 email_user=datos["correo"],
                 rid_solicitud=datos["rid_solicitud"],
+                status_ine_loads=1,
             )
             db_session.add(a)
             db_session.commit()
@@ -55,6 +56,7 @@ def datos_mewtwo(datos):
         else:
             e.email_user = datos["correo"]
             e.rid_solicitud = datos["rid_solicitud"]
+            e.status_ine_loads = 1
             db_session.add(e)
             db_session.commit()
             db_session.close()
