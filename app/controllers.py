@@ -597,42 +597,47 @@ def fill_id(hook: HookLog):
 
 @celery.task()
 def fill_validation(validation_id: str):
-    headers = {
-        "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
-    }
-    truora_info = requests.get(
-        f"https://api.validations.truora.com/v1/validations/{validation_id}",
-        headers=headers,
-    )
-    if truora_info.status_code == 200:
-        validation = Validation(**truora_info.json())
-        validation_details = ValidationDetail(
-            validation_id, **truora_info.json()["details"]["document_details"]
+    try:
+        existing_validation = db_session.query(Validation).filter(Validation.id == validation_id).one()
+    except NoResultFound:
+        headers = {
+            "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
+        }
+        truora_info = requests.get(
+            f"https://api.validations.truora.com/v1/validations/{validation_id}",
+            headers=headers,
         )
-        valid_documents = truora_info.json()["details"].get("document_validations")
-        db_session.add(validation)
-        db_session.commit()
-        db_session.add(validation_details)
-        if valid_documents:
-            for _, values in valid_documents.items():
-                for value in values:
-                    validation_documents = ValidationDocument(validation_id, **value)
-                    db_session.add(validation_documents)
-        db_session.commit()
-
+        if truora_info.status_code == 200:
+            validation = Validation(**truora_info.json())
+            validation_details = ValidationDetail(
+                validation_id, **truora_info.json()["details"]["document_details"]
+            )
+            valid_documents = truora_info.json()["details"].get("document_validations")
+            db_session.add(validation)
+            db_session.commit()
+            db_session.add(validation_details)
+            if valid_documents:
+                for _, values in valid_documents.items():
+                    for value in values:
+                        validation_documents = ValidationDocument(validation_id, **value)
+                        db_session.add(validation_documents)
+            db_session.commit()
 
 @celery.task()
 def fill_check(check_id: str):
-    headers = {
-        "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
-    }
-    truora_info = requests.get(
-        f"https://api.checks.truora.com/v1/checks/{check_id}", headers=headers
-    )
-    if truora_info.status_code == 200:
-        check = Check(**truora_info.json()["check"])
-        db_session.add(check)
-        db_session.commit()
+    try:
+        old_check = db_session.query(Check).filter(Check.id == check_id).one()
+    except NoResultFound:
+        headers = {
+            "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
+        }
+        truora_info = requests.get(
+            f"https://api.checks.truora.com/v1/checks/{check_id}", headers=headers
+        )
+        if truora_info.status_code == 200:
+            check = Check(**truora_info.json()["check"])
+            db_session.add(check)
+            db_session.commit()
 
 
 @celery.task()
@@ -711,7 +716,7 @@ def download_images(self,validation_id: str, user_id: str, process_id: str=None)
             return to_mewtwo_data
         else:
             get_link_images(process_id)
-            self.retry(countdown=10)
+            self.retry(countdown=3, max_retries=2)
     return None
 
 

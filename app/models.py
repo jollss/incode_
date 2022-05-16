@@ -240,20 +240,6 @@ class ProcessID(Base):
                     self.updated_at = datetime.datetime.now(tz=tz)
 
 
-class DigitalId(Base):
-    __tablename__ = "digital_ids"
-    id = Column(String(255), primary_key=True)
-    status = Column(String(255))
-    creation_date = Column(DateTime, nullable=True)
-    update_date = Column(DateTime)
-
-    def __init__(self, proccess_id, status, creation_date, update_date):
-        self.proccess_id = proccess_id
-        self.status = status
-        self.creation_date = creation_date
-        self.update_date = update_date
-
-
 class Validation(Base):
     __tablename__ = "validations"
     id = Column(String(255), primary_key=True)
@@ -267,6 +253,8 @@ class Validation(Base):
     # validation_document = Column(UUIDType(binary=False), ForeignKey('validation_documents.id'))
     attachment_status = Column(String(255), nullable=True)
     retry_of_id = Column(String(255))
+    created_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
+    updated_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
 
     def __init__(self, **kwargs):
         if "validation_id" in kwargs:
@@ -279,6 +267,8 @@ class Validation(Base):
                         value = parse(value, ignoretz=True)
                         # value = datetime.datetime.fromisoformat(value)
                     setattr(self, key, value)
+        self.created_at = datetime.datetime.now(tz=tz)
+        self.updated_at = datetime.datetime.now(tz=tz)
 
 
 class ValidationDetail(Base):
@@ -311,6 +301,8 @@ class ValidationDetail(Base):
     update_date = Column(DateTime)
     front_url = Column(Text)
     back_url = Column(Text)
+    created_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
+    updated_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
 
     def __init__(self, validation_id=None, **kwargs):
         self.validation_id = validation_id
@@ -323,6 +315,8 @@ class ValidationDetail(Base):
                     if "date" in key:
                         value = parse(value, ignoretz=True)
                     setattr(self, key, value)
+        self.created_at = datetime.datetime.now(tz=tz)
+        self.updated_at = datetime.datetime.now(tz=tz)
 
 
 class ValidationDocument(Base):
@@ -334,6 +328,8 @@ class ValidationDocument(Base):
     validation_type = Column(String(255))
     message = Column(String(255))
     manually_reviewed = Column(Boolean)
+    created_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
+    update_date = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
 
     def __init__(self, validation_id=None, **kwargs):
         self.validation_id = validation_id
@@ -341,6 +337,8 @@ class ValidationDocument(Base):
             if hasattr(self, key):
                 if value is not None:
                     setattr(self, key, value)
+        self.created_at = datetime.datetime.now(tz=tz)
+        self.updated_at = datetime.datetime.now(tz=tz)
 
 
 class Check(Base):
@@ -371,6 +369,8 @@ class Check(Base):
     national_id = Column(String(255))
     owner_document_type = Column(String(255))
     type = Column(String(255))
+    created_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
+    updated_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
 
     def __init__(self, **kwargs):
         if "check_id" in kwargs:
@@ -381,3 +381,5 @@ class Check(Base):
                     if "date" in key:
                         value = parse(value, ignoretz=True)
                     setattr(self, key, value)
+        self.created_at = datetime.datetime.now(tz=tz)
+        self.updated_at = datetime.datetime.now(tz=tz)
