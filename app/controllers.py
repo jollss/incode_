@@ -48,7 +48,7 @@ def datos_mewtwo(datos):
                 user_id=datos["user"],
                 email_user=datos["correo"],
                 rid_solicitud=datos["rid_solicitud"],
-                status_ine_loads=1,
+                # status_ine_loads=1,
             )
             db_session.add(a)
             db_session.commit()
@@ -56,7 +56,7 @@ def datos_mewtwo(datos):
         else:
             e.email_user = datos["correo"]
             e.rid_solicitud = datos["rid_solicitud"]
-            e.status_ine_loads = 1
+            # e.status_ine_loads = 1
             db_session.add(e)
             db_session.commit()
             db_session.close()
@@ -693,6 +693,16 @@ def link_user_to_process(process_id: str, user_id: str, account_id: str):
     else:
         return False
 
+
+def create_result_ine(user_id):
+    try:
+        result = ResultsIne(user_id=user_id,status_ine_loads=2)
+        db_session.add(result)
+        db_session.commit()
+        return result
+    except Exception as e:
+        capture_exception(e)
+        return False
 
 @celery.task(bind=True)
 def download_images(self,validation_id: str, user_id: str, process_id: str=None):
