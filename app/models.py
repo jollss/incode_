@@ -53,7 +53,7 @@ class ResultsIne(Base):
     created_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
     updated_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
 
-    def __init__(self, user_id, email_user, rid_solicitud, status_ine_loads=0):
+    def __init__(self, user_id, email_user=None, rid_solicitud=None, status_ine_loads=0):
         self.user_id = user_id
         self.email_user = email_user
         self.rid_solicitud = rid_solicitud
