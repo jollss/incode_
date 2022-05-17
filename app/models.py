@@ -187,15 +187,18 @@ class HookLog(Base):
                     None,
                 )
         if self.event_action == "succeeded":
-            if self.event_type == "document_validation":
-                return ids(
-                    False,
-                    False,
-                    self.object["identity_process_id"],
-                    None,
-                    None,
-                    self.object["details"].get("background_check").get("check_id"),
-                )
+            try:
+                if self.event_type == "document_validation":
+                    return ids(
+                        False,
+                        False,
+                        self.object["identity_process_id"],
+                        None,
+                        None,
+                        self.object["details"].get("background_check").get("check_id"),
+                    )
+            except:
+                pass
 
     def get_validation_id(self):
         if self.event_type == "document_validation":
