@@ -730,6 +730,19 @@ def download_images(self,validation_id: str, user_id: str, process_id: str=None)
         else:
             get_link_images(process_id)
             self.retry(countdown=3, max_retries=2)
+    elif front_url:
+        front_image = requests.get(front_url)
+        if front_image.status_code == 200:
+            image_base64_front = base64.b64encode(front_image.content).decode("utf-8")
+            to_mewtwo_data = {
+                "front_image": image_base64_front,
+                "back_image": image_base64_front,
+                "user_id": user_id,
+            }
+            return to_mewtwo_data
+        else:
+            get_link_images(process_id)
+            self.retry(countdown=3, max_retries=2)
     return None
 
 
