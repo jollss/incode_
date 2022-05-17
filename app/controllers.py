@@ -560,6 +560,7 @@ def webhook_handler(data):
         date,
     )
     db_session.add(webhook)
+    db_session.commit()
     fill_id(webhook)
     db_session.commit()
     validation_id = webhook.get_validation_id()

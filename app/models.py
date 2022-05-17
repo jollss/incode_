@@ -194,7 +194,7 @@ class HookLog(Base):
                     self.object["identity_process_id"],
                     None,
                     None,
-                    self.object["details"]["background_check"]["check_id"],
+                    self.object["details"].get("background_check").get("check_id"),
                 )
 
     def get_validation_id(self):
