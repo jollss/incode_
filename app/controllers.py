@@ -612,9 +612,10 @@ def fill_validation(validation_id: str):
         if truora_info.status_code == 200:
             validation = Validation(**truora_info.json())
             validation_details = ValidationDetail(
-                validation_id, **truora_info.json()["details"]["document_details"]
+                validation_id, **truora_info.json().get("details").get("document_details")
             )
-            valid_documents = truora_info.json()["details"].get("document_validations")
+            valid_documents = truora_info.json().get("details").get("document_validations")
+            
             db_session.add(validation)
             db_session.commit()
             db_session.add(validation_details)
