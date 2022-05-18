@@ -27,13 +27,13 @@ from base64 import b64encode
 from dateutil.parser import parse
 
 # from werkzeug.security import check_password_hash, generate_password_hash
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from app.models import *
 
 # import calendar
 # from json.decoder import JSONDecodeError
 # import time
 from app.database import db_session
-from app.models import *
 
 from PIL import Image
 # import io
@@ -546,7 +546,6 @@ def carga_datos_cat_sub(da):
             db_session.add(publico)
             db_session.commit()
         db_session.close()
-        # print("subcateogia",b['name'],b['id'],a['id'])
 
 
 def webhook_handler(data):
@@ -776,3 +775,14 @@ def mewtwo_progress_pld(data):
         f"{os.environ.get('MEWTOW_URI')}/loadsImagesIne", json=data_to_send
     )
     return True
+
+
+def get_nombre_act_economica(user_id):
+    try:
+        data = db_session.query(ResultsIne).filter(ResultsIne.user_id==user_id).one()
+        return data.sub_nombre_economica
+    except MultipleResultsFound:
+        data = db_session.query(ResultsIne).filter(ResultsIne.user_id==user_id).order_by(ResultsIne.created_at.desc()).first()
+        return data.sub_nombre_economica
+    except NoResultFound:
+        return None
