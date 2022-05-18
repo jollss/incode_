@@ -695,6 +695,25 @@ def link_user_to_process(process_id: str, user_id: str, account_id: str):
         return False
 
 
+def verify_process_status(process_id: str) -> bool:
+    headers = {
+    "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
+}
+    truora_info = requests.get(
+        f"https://api.identity.truora.com/v1/processes/{process_id}/result",
+        headers=headers,
+    )
+    if truora_info.status_code == 200:
+        truora_json = truora_info.json()
+        if truora_json.get("status") == "success" or truora_json.get("status") == "pending":
+            return True
+        else:
+            return False
+    else:
+        return False
+    
+
+
 def create_result_ine(user_id):
     try:
         result = ResultsIne(user_id=user_id,status_ine_loads=2)

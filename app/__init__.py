@@ -127,8 +127,11 @@ def create_app():
         datos = request.get_json()
         process = link_user_to_process(**datos)
         # create_result_ine(datos['user_id'])
-        download_images.apply_async((process.validation_id, process.user_id, process.proccess_id), link=mewtwo_progress_pld.s())
-        return jsonify(success=True), 200
+        if verify_process_status(process.proccess_id):
+            download_images.apply_async((process.validation_id, process.user_id, process.proccess_id), link=mewtwo_progress_pld.s())
+            return jsonify(success=True), 200
+        else:
+            return jsonify(success=False, response="Proceso no valido"), 400
 
 
     @app.errorhandler(Exception)
