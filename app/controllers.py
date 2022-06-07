@@ -1,9 +1,9 @@
 # import logging
-from io import BytesIO
 import os
 
 # import pytz
 import sys
+from io import BytesIO
 from os import path
 
 # import string
@@ -25,17 +25,17 @@ import traceback
 from base64 import b64encode
 
 from dateutil.parser import parse
+from PIL import Image
 
 # from werkzeug.security import check_password_hash, generate_password_hash
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from app.models import *
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 # import calendar
 # from json.decoder import JSONDecodeError
 # import time
 from app.database import db_session
+from app.models import *
 
-from PIL import Image
 # import io
 # from os import remove
 
@@ -571,6 +571,9 @@ def webhook_handler(data):
     proccess_id = webhook.detone_download()
     if proccess_id:
         get_link_images.delay(proccess_id)
+    final_check = webhook.get_final_check_id()
+    if final_check:
+        fill_last_check.delay(final_check)
 
 
 def fill_id(hook: HookLog):
@@ -600,7 +603,9 @@ def fill_id(hook: HookLog):
 @celery.task()
 def fill_validation(validation_id: str):
     try:
-        existing_validation = db_session.query(Validation).filter(Validation.id == validation_id).one()
+        existing_validation = (
+            db_session.query(Validation).filter(Validation.id == validation_id).one()
+        )
     except NoResultFound:
         headers = {
             "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
@@ -613,18 +618,29 @@ def fill_validation(validation_id: str):
             validation = Validation(**truora_info.json())
             db_session.add(validation)
             db_session.commit()
-            validation_details = ValidationDetail(
-                validation_id, **truora_info.json().get("details").get("document_details")
-            )
-            valid_documents = truora_info.json().get("details").get("document_validations")
-            
-            db_session.add(validation_details)
-            if valid_documents:
-                for _, values in valid_documents.items():
-                    for value in values:
-                        validation_documents = ValidationDocument(validation_id, **value)
-                        db_session.add(validation_documents)
-            db_session.commit()
+            try:
+                validation_details = ValidationDetail(
+                    validation_id,
+                    **truora_info.json().get("details").get("document_details"),
+                )
+                valid_documents = (
+                    truora_info.json().get("details").get("document_validations")
+                )
+
+                db_session.add(validation_details)
+                if valid_documents:
+                    for _, values in valid_documents.items():
+                        for value in values:
+                            validation_documents = ValidationDocument(
+                                validation_id, **value
+                            )
+                            db_session.add(validation_documents)
+                db_session.commit()
+            except AttributeError:
+                pass
+            except Exception as e:
+                capture_exception(e)
+
 
 @celery.task()
 def fill_check(check_id: str):
@@ -641,6 +657,29 @@ def fill_check(check_id: str):
             check = Check(**truora_info.json()["check"])
             db_session.add(check)
             db_session.commit()
+
+
+@celery.task()
+def fill_last_check(check_id: str):
+    try:
+        last_check_id = (
+            db_session.query(ProcessID)
+            .filter(ProcessID.last_check_id == check_id)
+            .one()
+        )
+        headers = {
+            "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
+        }
+        truora_info = requests.get(
+            f"https://api.checks.truora.com/v1/checks/{check_id}", headers=headers
+        )
+        if truora_info.status_code == 200:
+            last_check = Check(**truora_info.json()["check"])
+            db_session.add(last_check)
+            db_session.commit()
+            return True
+    except NoResultFound:
+        return False
 
 
 @celery.task()
@@ -697,26 +736,28 @@ def link_user_to_process(process_id: str, user_id: str, account_id: str):
 
 def verify_process_status(process_id: str) -> bool:
     headers = {
-    "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
-}
+        "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
+    }
     truora_info = requests.get(
         f"https://api.identity.truora.com/v1/processes/{process_id}/result",
         headers=headers,
     )
     if truora_info.status_code == 200:
         truora_json = truora_info.json()
-        if truora_json.get("status") == "success" or truora_json.get("status") == "pending":
+        if (
+            truora_json.get("status") == "success"
+            or truora_json.get("status") == "pending"
+        ):
             return True
         else:
             return False
     else:
         return False
-    
 
 
 def create_result_ine(user_id):
     try:
-        result = ResultsIne(user_id=user_id,status_ine_loads=2)
+        result = ResultsIne(user_id=user_id, status_ine_loads=2)
         db_session.add(result)
         db_session.commit()
         return result
@@ -724,8 +765,9 @@ def create_result_ine(user_id):
         capture_exception(e)
         return False
 
+
 @celery.task(bind=True)
-def download_images(self,validation_id: str, user_id: str, process_id: str=None):
+def download_images(self, validation_id: str, user_id: str, process_id: str = None):
     to_mewtwo_data = {}
     validation_details = (
         db_session.query(ValidationDetail)
@@ -778,12 +820,58 @@ def mewtwo_progress_pld(data):
     return True
 
 
+@celery.task()
+def create_customer_check(user_id: str) -> bool:
+    try:
+        process = db_session.query(ProcessID).filter(ProcessID.user_id == user_id).one()
+    except NoResultFound:
+        return False
+    except MultipleResultsFound:
+        process = (
+            db_session.query(ProcessID)
+            .filter(ProcessID.user_id == user_id, ProcessID.validation_id != None)
+            .first()
+        )
+    validation_id = process.validation_id
+    if curp := get_user_document_number(validation_id):
+        payload = f"country=MX&type=person&national_id={curp}&user_authorized=true&owner_document_type=national_id"
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
+            "truora-priority": "medium",
+        }
+        check = requests.post(
+            "https://api.checks.truora.com/v1/checks", data=payload, headers=headers
+        )
+        check_json = check.json()
+        new_check_id = check_json["check"].get("check_id")
+        process.last_check_id = new_check_id
+        db_session.commit()
+        return True
+    else:
+        return False
+
+
+def get_user_document_number(validation_id: str) -> str:
+    details = (
+        db_session.query(ValidationDetail)
+        .filter(ValidationDetail.validation_id == validation_id)
+        .first()
+    )
+    return details.document_number
+
+
 def get_nombre_act_economica(user_id):
     try:
-        data = db_session.query(ResultsIne).filter(ResultsIne.user_id==user_id).one()
+        data = db_session.query(ResultsIne).filter(ResultsIne.user_id == user_id).one()
         return data.sub_nombre_economica
     except MultipleResultsFound:
-        data = db_session.query(ResultsIne).filter(ResultsIne.user_id==user_id).order_by(ResultsIne.created_at.desc()).first()
+        data = (
+            db_session.query(ResultsIne)
+            .filter(ResultsIne.user_id == user_id)
+            .order_by(ResultsIne.created_at.desc())
+            .first()
+        )
         return data.sub_nombre_economica
     except NoResultFound:
         return None

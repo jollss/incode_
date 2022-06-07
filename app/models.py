@@ -53,7 +53,9 @@ class ResultsIne(Base):
     created_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
     updated_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
 
-    def __init__(self, user_id, email_user=None, rid_solicitud=None, status_ine_loads=0):
+    def __init__(
+        self, user_id, email_user=None, rid_solicitud=None, status_ine_loads=0
+    ):
         self.user_id = user_id
         self.email_user = email_user
         self.rid_solicitud = rid_solicitud
@@ -214,6 +216,11 @@ class HookLog(Base):
         if self.event_type == "identity_process":
             if self.event_action == "succeeded":
                 return self.object["process_id"]
+
+    def get_final_check_id(self):
+        if self.event_type == "check":
+            if self.event_action == "finished":
+                return self.object["check_id"]
 
 
 class ProcessID(Base):
