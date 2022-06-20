@@ -847,9 +847,18 @@ def create_customer_check(user_id: str) -> bool:
         new_check_id = check_json["check"].get("check_id")
         process.last_check_id = new_check_id
         db_session.commit()
+        get_bad_score.delay(new_check_id)
         return True
     else:
         return False
+
+@celery.task(bind=True)
+def get_bad_score(self, check_id: str) -> bool:
+    try:
+        queryCheckID = db_session.query(Check).filter(Check.id == check_id, Check.score < 0.5, Check.type == "person").one()
+    except NoResultFound:
+        return False
+        self.retry(countdown=3, max_retries=2)
 
 
 def get_user_document_number(validation_id: str) -> str:
