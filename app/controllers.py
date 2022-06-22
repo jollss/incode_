@@ -847,19 +847,55 @@ def create_customer_check(user_id: str) -> bool:
         new_check_id = check_json["check"].get("check_id")
         process.last_check_id = new_check_id
         db_session.commit()
-        get_bad_score.delay(new_check_id)
+        get_bad_score.delay(new_check_id, user_id)
         return True
     else:
         return False
 
 @celery.task(bind=True)
-def get_bad_score(self, check_id: str) -> bool:
+def get_bad_score(self, check_id: str, user_id: str) -> bool:
     try:
-        queryCheckID = db_session.query(Check).filter(Check.id == check_id, Check.score < 0.5, Check.type == "person").one()
+        queryCheckID = (db_session.query(Check).filter(Check.id == check_id, Check.score < 0.5, Check.type == "person").one())
+        user_Name = queryCheckID.summary
+
+        for userKeys, values in user_Name.items():
+            if(userKeys == "names_found"):
+                for k in values:
+                    name = k['first_name']
+        
+        dataEmailandRid = get_user_info(user_id)
+
+        data = {
+            "fromPlatform": "cyndaquil",
+            "template": "cyndaquil_score",
+            "subject": "Score bajo KYC",
+            "from": "no-reply@curadeuda.com",
+            "fromName": "Cura Deuda",
+            "to": "dcarvallo@curadeuda.com",
+            "message": "",
+            "personalization": {
+                "name": name,
+                "email": dataEmailandRid.email_user,
+                "rid_solicitud": dataEmailandRid.rid_solicitud,
+            }
+        }
+        headers = {'content-type': 'application/json'}
+        r = requests.post('{}/mailing'.format(os.environ.get('PIDGEOT_URI')), json=data, headers=headers)
+        r_json = r.json()
+        if r.status_code == 200:
+            return True
+        else:
+            return False
+    except NoResultFound:
+        self.retry(countdown=30, max_retries=2)
+        return False
+
+def get_user_info(userId):
+    try:
+        queryCheckID = (db_session.query(ResultsIne).filter(ResultsIne.user_id == userId).one())
+        return queryCheckID
     except NoResultFound:
         return False
-        self.retry(countdown=3, max_retries=2)
-
 
 def get_user_document_number(validation_id: str) -> str:
     details = (
@@ -868,7 +904,6 @@ def get_user_document_number(validation_id: str) -> str:
         .first()
     )
     return details.document_number
-
 
 def get_nombre_act_economica(user_id):
     try:
