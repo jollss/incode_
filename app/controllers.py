@@ -855,40 +855,74 @@ def create_customer_check(user_id: str) -> bool:
 @celery.task(bind=True)
 def get_bad_score(self, check_id: str, user_id: str) -> bool:
     try:
-        queryCheckID = (db_session.query(Check).filter(Check.id == check_id, Check.score < 0.5, Check.type == "person").one())
+        queryCheckID = db_session.query(Check).filter(Check.id == check_id, Check.score < 0.5, Check.type == "person").one()
         user_Name = queryCheckID.summary
-
-        for userKeys, values in user_Name.items():
-            if(userKeys == "names_found"):
-                for k in values:
-                    name = k['first_name']
-        
+        name = f"{user_Name.get('names_found')[0].get('first_name')} {user_Name.get('names_found')[0].get('last_name')}"
         dataEmailandRid = get_user_info(user_id)
-
         data = {
-            "fromPlatform": "cyndaquil",
-            "template": "cyndaquil_score",
             "subject": "Score bajo KYC",
-            "from": "no-reply@curadeuda.com",
-            "fromName": "Cura Deuda",
-            "to": "dcarvallo@curadeuda.com",
-            "message": "",
             "personalization": {
                 "name": name,
                 "email": dataEmailandRid.email_user,
                 "rid_solicitud": dataEmailandRid.rid_solicitud,
             }
         }
-        headers = {'content-type': 'application/json'}
-        r = requests.post('{}/mailing'.format(os.environ.get('PIDGEOT_URI')), json=data, headers=headers)
-        r_json = r.json()
-        if r.status_code == 200:
-            return True
-        else:
-            return False
+        save_pdf_check(check_id)
+        send_email(data,check_id)
+        return True
     except NoResultFound:
         self.retry(countdown=30, max_retries=2)
-        return False
+
+
+def save_pdf_check(check_id:str):
+    try:
+        headers = {
+            "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
+        }
+        r = requests.get(f"https://api.checks.truora.com/v1/checks/{check_id}/pdf", headers=headers)
+        if r.status_code == 200:
+            pdf = r.content
+            with open(f"{check_id}.pdf", "wb") as f:
+                f.write(pdf)
+            return True
+        else:
+            return None
+    except Exception as e:
+        capture_exception(e)
+        return None
+
+
+def open_pdf(check_id:str):
+    """
+    Open a pdf and return a base64 encoded string
+    """
+    try:
+        with open(f"{check_id}.pdf", "rb") as f:
+            pdf = f.read()
+            pdf_base64 = base64.b64encode(pdf).decode("utf-8")
+            return pdf_base64
+    except Exception as e:
+        capture_exception(e)
+        return None
+
+
+def send_email(data,check_id):
+    try:
+        headers = {
+            "Content-Type": "application/json",
+        }
+        json_data = {
+            **data,
+            "pdf": open_pdf(check_id),
+        }
+        r = requests.post("https://www.workato.com/webhooks/rest/1b7fa5ec-105e-4422-ad07-4dd0af2c570b/pdf-score", json=json_data, headers=headers)
+        print(r.status_code)
+    except Exception as e:
+        traceback.print_exc()
+        capture_exception(e)
+        return None
+
+
 
 def get_user_info(userId):
     try:
