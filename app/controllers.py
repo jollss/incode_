@@ -847,10 +847,89 @@ def create_customer_check(user_id: str) -> bool:
         new_check_id = check_json["check"].get("check_id")
         process.last_check_id = new_check_id
         db_session.commit()
+        get_bad_score.delay(new_check_id, user_id)
         return True
     else:
         return False
 
+@celery.task(bind=True)
+def get_bad_score(self, check_id: str, user_id: str) -> bool:
+    try:
+        queryCheckID = db_session.query(Check).filter(Check.id == check_id, Check.score < 0.5, Check.type == "person").one()
+        user_Name = queryCheckID.summary
+        name = f"{user_Name.get('names_found')[0].get('first_name')} {user_Name.get('names_found')[0].get('last_name')}"
+        dataEmailandRid = get_user_info(user_id)
+        data = {
+            "subject": "Score bajo KYC",
+            "personalization": {
+                "name": name,
+                "email": dataEmailandRid.email_user,
+                "rid_solicitud": dataEmailandRid.rid_solicitud,
+            }
+        }
+        save_pdf_check(check_id)
+        send_email(data,check_id)
+        return True
+    except NoResultFound:
+        self.retry(countdown=30, max_retries=2)
+
+
+def save_pdf_check(check_id:str):
+    try:
+        headers = {
+            "Truora-API-Key": os.environ.get("TRUORA_API_KEY"),
+        }
+        r = requests.get(f"https://api.checks.truora.com/v1/checks/{check_id}/pdf", headers=headers)
+        if r.status_code == 200:
+            pdf = r.content
+            with open(f"{check_id}.pdf", "wb") as f:
+                f.write(pdf)
+            return True
+        else:
+            return None
+    except Exception as e:
+        capture_exception(e)
+        return None
+
+
+def open_pdf(check_id:str):
+    """
+    Open a pdf and return a base64 encoded string
+    """
+    try:
+        with open(f"{check_id}.pdf", "rb") as f:
+            pdf = f.read()
+            pdf_base64 = base64.b64encode(pdf).decode("utf-8")
+            return pdf_base64
+    except Exception as e:
+        capture_exception(e)
+        return None
+
+
+def send_email(data,check_id):
+    try:
+        headers = {
+            "Content-Type": "application/json",
+        }
+        json_data = {
+            **data,
+            "pdf": open_pdf(check_id),
+        }
+        r = requests.post("https://www.workato.com/webhooks/rest/1b7fa5ec-105e-4422-ad07-4dd0af2c570b/pdf-score", json=json_data, headers=headers)
+        print(r.status_code)
+    except Exception as e:
+        traceback.print_exc()
+        capture_exception(e)
+        return None
+
+
+
+def get_user_info(userId):
+    try:
+        queryCheckID = (db_session.query(ResultsIne).filter(ResultsIne.user_id == userId).one())
+        return queryCheckID
+    except NoResultFound:
+        return False
 
 def get_user_document_number(validation_id: str) -> str:
     details = (
@@ -859,7 +938,6 @@ def get_user_document_number(validation_id: str) -> str:
         .first()
     )
     return details.document_number
-
 
 def get_nombre_act_economica(user_id):
     try:
