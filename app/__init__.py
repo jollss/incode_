@@ -8,7 +8,7 @@ from sentry_sdk import capture_exception, capture_message
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.exceptions import HTTPException, InternalServerError
-
+from app.kyc import kyc
 from app.controllers import *
 from app.database import db_session
 
@@ -34,6 +34,7 @@ def create_app():
     )
     app = Flask(__name__)
     app.config.from_object("app.config.Config")
+    app.register_blueprint(kyc)
     CORS(app)
     # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',filename='./logs/app.log')
 
