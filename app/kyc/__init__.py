@@ -7,8 +7,8 @@ kyc = Blueprint('kyc', __name__, url_prefix='/kyc')
 
 @kyc.route('/start', methods=['POST'])
 def start_kyc():
-    start_process(request.json['user_id'])
-    return jsonify(success=True), 200
+    url = start_process(request.json['user_id'])
+    return jsonify(success=True, url=url), 200
 
 
 @kyc.route('/webhook', methods=['POST'])
