@@ -1,20 +1,15 @@
 import abc
 import datetime
-import enum
-import hashlib
-import json
+
 import os
-import random
-import string
+
 from typing import List
 import uuid
 from collections import namedtuple
 
 import pytz
 import requests
-import unidecode
-from app.database import Base, db_session
-from dateutil.parser import parse
+from app.database import Base
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -30,9 +25,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy_utils import IPAddressType, JSONType, UUIDType, ScalarListType
 
 tz = pytz.timezone("America/Mexico_City")
@@ -47,8 +40,9 @@ class Session(Base):
     env = Column(String(25))
     url = Column(String(300))
     status = Column(String(50))
+    retries = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.now(tz))
-    updated_at = Column(DateTime(timezone=True), default=datetime.datetime.now(tz))
+    updated_at = Column(DateTime(timezone=True), default=datetime.datetime.now(tz), onupdate=datetime.datetime.now(tz))
     deleted_at = Column(DateTime(timezone=True))
     ocr_result = relationship("OCRResult", backref="session", lazy="dynamic")
     score = relationship("Score", backref="session", uselist=False)
@@ -78,7 +72,6 @@ class Session(Base):
         "Content-Type": "application/json"
         }
         token = requests.post(url, json=payload, headers=headers)
-        print(token.json())
         self.token = token.json()["token"]
         self.env = token.json()["env"]
         self.session_id = token.json()["interviewId"]
@@ -140,6 +133,14 @@ class Session(Base):
             return images(images_data["croppedFrontID"], images_data["croppedBackID"])
         else:
             return images(None, None)
+        
+    def increment_retries(self):
+        retries = 0
+        if self.retries is None:
+            self.retries = retries
+        else:
+            self.retries = self.retries + 1
+        
         
 
 
@@ -297,7 +298,7 @@ class CurpVerification(Base):
     curp:str = Column(String(255))
     sex:str = Column(String(30))
     nationality :str = Column(String(30))
-    # result:str = Column(String(255))
+    result:str = Column(String(255))
     renapo_valid:bool = Column(Boolean)
     name : str = Column(String(255))
     paternal_surname :str = Column(String(255))
@@ -314,7 +315,7 @@ class CurpVerification(Base):
         self.curp = kwargs.get("curp")
         self.sex = kwargs.get("sex")
         self.nationality = kwargs.get("nationality")
-        # self.result = kwargs.get("result")
+        self.result = kwargs.get("result")
         self.renapo_valid = kwargs.get("renapo_valid")
         self.name = kwargs.get("names")
         self.paternal_surname = kwargs.get("paternal_surname")
