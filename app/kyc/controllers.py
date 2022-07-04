@@ -70,14 +70,18 @@ def fill_score(session_id):
     )
     db_session.add(scores)
     db_session.commit()
+    return session_id
 
-
+@celery.task()
 def validate_score(session_id):
     try:
-        session = db_session.query(Session,Score).join(Score).filter(Session.session_id == session_id, Score.overall_value > 70, Score.overall_status == "OK").one()
-        images = session.Session.get_images()
-        mewtwo_progress_pld.delay(session.Session.user_id, images.front, images.back)
-        return True
+        if session_id:
+            session = db_session.query(Session,Score).join(Score).filter(Session.session_id == session_id, Score.overall_value > 70, Score.overall_status == "OK").one()
+            images = session.Session.get_images()
+            mewtwo_progress_pld.delay(session.Session.user_id, images.front, images.back)
+            return True
+        else:
+            return False
     except NoResultFound:
         return False
 
