@@ -130,7 +130,7 @@ class Session(Base):
         images_data = requests.post(url,json=json, headers=headers)
         if images_data.status_code == 200:
             images_data = images_data.json()
-            return images(images_data["croppedFrontID"], images_data["croppedBackID"])
+            return images(images_data["croppedFrontID"], images_data.get("croppedBackID","croppedFrontID"))
         else:
             return images(None, None)
         
