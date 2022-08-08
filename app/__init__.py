@@ -115,28 +115,6 @@ def create_app():
             # datos={"datos":ditto_eco}
             # return datos
 
-    @app.route("/webhook", methods=["POST"])
-    def webhook_endpoint():
-        datos = request.get_json()
-        webhook_handler(datos)
-        return jsonify(success=True), 200
-
-    @app.route("/link_process", methods=["POST"])
-    def link_process():
-        datos = request.get_json()
-        failed = datos.pop("failed", False)
-        process = link_user_to_process(**datos)
-        if verify_process_status(process.proccess_id) and not failed:
-            create_result_ine(datos["user_id"])
-            download_images.apply_async(
-                (process.validation_id, process.user_id, process.proccess_id),
-                link=mewtwo_progress_pld.s(),
-            )
-            return jsonify(success=True), 200
-        elif failed:
-            return jsonify(success=False), 200
-        else:
-            return jsonify(success=False, response="Proceso no valido"), 400
 
     @app.route("/act_eco/<user_id>", methods=["GET"])
     def get_act_eco(user_id):
@@ -146,10 +124,6 @@ def create_app():
         else:
             return jsonify(success=False, response="No existe"), 404
 
-    @app.route("/customer/check/<user_id>", methods=["PUT"])
-    def customer_check(user_id):
-        create_customer_check.delay(user_id)
-        return jsonify(success=True), 200
 
     @app.errorhandler(Exception)
     def handle_exception(e):
