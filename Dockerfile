@@ -18,6 +18,9 @@ RUN apt-get -y update \
         python-lxml \
         shared-mime-info \
         libcairo2 \
+        mariadb-client \
+        libmariadbclient-dev \
+        build-essential \
     && apt-get -y clean
 COPY requirements.txt /usr/src/app/requirements.txt
 RUN pip install -r requirements.txt

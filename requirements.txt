@@ -5,13 +5,14 @@ Flask-SQLAlchemy==2.4.4
 SQLAlchemy==1.3.20
 SQLAlchemy-Utils==0.36.8
 mysql-connector
+mysqlclient
 alembic
 pytz
 werkzeug
 requests
 maxminddb-geolite2
-redis
 celery
+redis
 click
 Flask-Cors==3.0.9
 Flask-Celery-Helper
@@ -19,3 +20,4 @@ Pillow
 newrelic==5.22.1.152
 gunicorn
 sentry-sdk[flask]
+python-dateutil
