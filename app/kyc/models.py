@@ -77,7 +77,11 @@ class Session(Base):
         self.session_id = token.json()["interviewId"]
     
     def set_url(self):
-        self.url = f"https://demo-onboarding.incodesmile.com/curadeuda743/flow/{os.environ.get('CONFIGURATION_ID')}?interviewId={self.session_id}"
+        cd_onboarding = os.environ.get('CD_ONBOARDING')
+        if cd_onboarding == "true":
+            self.url = f"{os.environ.get('CD_ONBOARDING_URI')}/?interviewId={self.session_id}"
+        else:
+            self.url = f"https://demo-onboarding.incodesmile.com/curadeuda743/flow/{os.environ.get('CONFIGURATION_ID')}?interviewId={self.session_id}"
     
     def set_status(self):
         url = f"{os.environ.get('INCODE_URI')}/omni/get/onboarding/status"
