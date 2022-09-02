@@ -1,4 +1,4 @@
-from app.kyc.controllers import (fill_ocr_result, fill_score, start_process, validate_process,
+from app.kyc.controllers import (fill_ocr_result, fill_score, start_process, validate_information, validate_process,
                                  validate_score)
 from flask import Blueprint, jsonify, request
 
@@ -27,3 +27,11 @@ def validate_score_handler(session_id):
         return jsonify(success=True), 200
     else:
         return jsonify(success=False), 400
+    
+
+@kyc.route("/correct", methods=["POST"])
+def correct_name():
+    data = request.json
+    validate = validate_information(data['user_id'],data['session_id'])
+    return jsonify(success=True, validate=validate), 200
+    
