@@ -89,7 +89,7 @@ def validate_score(session_id):
             session = db_session.query(Session,Score).join(Score).filter(Session.session_id == session_id, Score.overall_value > 70, Score.overall_status == "OK").one()
             images = session.Session.get_images()
             mewtwo_progress_pld.delay(session.Session.user_id, images.front, images.back)
-            validate_information.delay(session.Session.user_id, session_id)
+            validate_information.delay(session.Session.user_id, session.Session.id)
             return True
         else:
             return False
@@ -99,7 +99,7 @@ def validate_score(session_id):
         session = db_session.query(Session,Score).join(Score).filter(Session.session_id == session_id, Score.overall_value > 70, Score.overall_status == "OK").first()
         images = session.Session.get_images()
         mewtwo_progress_pld.delay(session.Session.user_id, images.front, images.back)
-        validate_information.delay(session.Session.user_id, session_id)
+        validate_information.delay(session.Session.user_id, session.Session.id)
         return True
     except Exception as e:
         capture_exception(e)
@@ -173,8 +173,9 @@ def get_ocr_results(session_id)->dict:
 
 def get_email_by_user_id(user_id)->str:
     try:
-        email = db_session.query(ResultsIne).filter(ResultsIne.user_id == user_id).one()
-        return email.email
+        r = requests.get('{}/expedients/return/email/{}'.format(os.environ.get('MEWTWO_URI'),user_id))
+        email = r.json()['email']
+        return email
     except Exception as e:
         capture_exception(e)
         return None
