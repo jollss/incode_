@@ -1,5 +1,6 @@
 import os
 import requests
+from app.models import ResultsIne
 from sentry_sdk import capture_exception
 from app.kyc.models import (
     CurpVerification,
@@ -88,6 +89,7 @@ def validate_score(session_id):
             session = db_session.query(Session,Score).join(Score).filter(Session.session_id == session_id, Score.overall_value > 70, Score.overall_status == "OK").one()
             images = session.Session.get_images()
             mewtwo_progress_pld.delay(session.Session.user_id, images.front, images.back)
+            validate_information.delay(session.Session.user_id, session_id)
             return True
         else:
             return False
@@ -97,6 +99,7 @@ def validate_score(session_id):
         session = db_session.query(Session,Score).join(Score).filter(Session.session_id == session_id, Score.overall_value > 70, Score.overall_status == "OK").first()
         images = session.Session.get_images()
         mewtwo_progress_pld.delay(session.Session.user_id, images.front, images.back)
+        validate_information.delay(session.Session.user_id, session_id)
         return True
     except Exception as e:
         capture_exception(e)
@@ -126,3 +129,63 @@ def validate_process(session_id):
     except Exception as e:
         capture_exception(e)
         return False
+    
+    
+@celery.task()
+def validate_information(user_id, session_id):
+    ocr = get_ocr_results(session_id)
+    email = get_email_by_user_id(user_id)
+    ocr["email"] = email
+    magneton_update = requests.put(
+        f"{os.environ.get('MAGNETON_URI')}/{user_id}", json=ocr
+    )
+    print(ocr)
+    if magneton_update.status_code == 200:
+        return True
+    pass
+    
+    
+def get_ocr_results(session_id)->dict:
+    try:
+        info = {}
+        ocr_result = db_session.query(OCRResult).filter(OCRResult.session_id == session_id).one()
+        info = {
+            "name":convert_to_caml_case(ocr_result.name.get("givenName")),
+            "first_lastname":convert_to_caml_case(ocr_result.name.get("paternalLastName")),
+            "second_lastname":convert_to_caml_case(ocr_result.name.get("maternalLastName")),
+            "rfc":ocr_result.curp[:10] if ocr_result.curp else None
+        }
+        return info
+    except NoResultFound:
+        return False
+    except MultipleResultsFound:
+        ocr_result = db_session.query(OCRResult).filter(OCRResult.session_id == session_id).first()
+        info = {
+            "name":convert_to_caml_case(ocr_result.name.get("givenName")),
+            "first_lastname":convert_to_caml_case(ocr_result.name.get("paternalLastName")),
+            "second_lastname":convert_to_caml_case(ocr_result.name.get("maternalLastName")),
+            "rfc":ocr_result.curp[:10] if ocr_result.curp else None
+        }
+        return info
+        
+
+
+
+def get_email_by_user_id(user_id)->str:
+    try:
+        email = db_session.query(ResultsIne).filter(ResultsIne.user_id == user_id).one()
+        return email.email
+    except Exception as e:
+        capture_exception(e)
+        return None
+
+
+
+def convert_to_caml_case(string:str):
+    """
+    Convert DANIEL to Daniel
+    """
+    try:
+        return string.title()
+    except Exception as e:
+        return None
