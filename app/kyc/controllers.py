@@ -159,7 +159,7 @@ def get_ocr_results(session_id)->dict:
     except NoResultFound:
         return False
     except MultipleResultsFound:
-        ocr_result = db_session.query(OCRResult).filter(OCRResult.session_id == session_id).first()
+        ocr_result = db_session.query(OCRResult).filter(OCRResult.session_id == session_id).order_by(OCRResult.created_at.desc()).first()
         info = {
             "name":convert_to_caml_case(ocr_result.name.get("givenName")),
             "first_lastname":convert_to_caml_case(ocr_result.name.get("paternalLastName")),

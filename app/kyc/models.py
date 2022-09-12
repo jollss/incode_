@@ -81,7 +81,8 @@ class Session(Base):
         if cd_onboarding == "true":
             self.url = f"{os.environ.get('CD_ONBOARDING_URI')}/?interviewId={self.session_id}"
         else:
-            self.url = f"https://demo-onboarding.incodesmile.com/curadeuda743/flow/{os.environ.get('CONFIGURATION_ID')}?interviewId={self.session_id}"
+            # self.url = f"https://demo-onboarding.incodesmile.com/curadeuda743/flow/{os.environ.get('CONFIGURATION_ID')}?interviewId={self.session_id}"
+            self.url = f"https://saas-onboarding.incodesmile.com/curadeudas444/flow/{os.environ.get('CONFIGURATION_ID')}?interviewId={self.session_id}"
     
     def set_status(self):
         url = f"{os.environ.get('INCODE_URI')}/omni/get/onboarding/status"
