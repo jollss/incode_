@@ -26,7 +26,9 @@ def start_process(user_id):
         )
         exists_session.increment_retries()
         exists_session.token = session.token
+        exists_session.set_url()
         db_session.commit()
+        db_session.refresh(exists_session)
         return exists_session.url
     except NoResultFound:
         session.set_url()
