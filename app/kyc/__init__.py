@@ -1,5 +1,5 @@
 from app.kyc.controllers import (fill_ocr_result, fill_score, start_process, validate_information, validate_process,
-                                 validate_score)
+                                 validate_score, get_curp)
 from flask import Blueprint, jsonify, request
 
 kyc = Blueprint("kyc", __name__, url_prefix="/kyc")
@@ -35,3 +35,9 @@ def correct_name():
     validate = validate_information(data['user_id'],data['session_id'])
     return jsonify(success=True, validate=validate), 200
     
+
+
+@kyc.route("/curp/<user_id>", methods=["GET"])
+def get_curp_user(user_id):
+    curp = get_curp(user_id)
+    return jsonify(success=True, curp=curp), 200

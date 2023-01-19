@@ -192,3 +192,14 @@ def convert_to_caml_case(string:str):
         return string.title()
     except Exception as e:
         return None
+
+
+def get_curp(user_id):
+    session = db_session.query(Session).filter(Session.user_id == user_id).one()
+    curp = db_session.query(OCRResult).filter(OCRResult.session_id == session.id).\
+        filter(OCRResult.curp != None)\
+        .filter(OCRResult.curp != "").first()
+    if curp:
+        return curp.curp
+    else:
+        return None
