@@ -72,6 +72,7 @@ class Session(Base):
         "Content-Type": "application/json"
         }
         token = requests.post(url, json=payload, headers=headers)
+        print("token",token)
         self.token = token.json()["token"]
         self.env = token.json()["env"]
         self.session_id = token.json()["interviewId"]
@@ -93,6 +94,7 @@ class Session(Base):
             "X-Incode-Hardware-Id": self.token
         }
         self.status = requests.get(url, headers=headers).json()["onboardingStatus"]
+        print("token",self.status)
     
     
     def get_ocr_by_token(self)->dict:
@@ -104,6 +106,7 @@ class Session(Base):
             "X-Incode-Hardware-Id": self.token
         }
         ocr = requests.get(url, headers=headers).json()
+        print("ocr",ocr)
         return ocr['ocrData']
 
     def get_scores_by_token(self)->dict:
@@ -115,6 +118,7 @@ class Session(Base):
             "X-Incode-Hardware-Id": self.token
         }
         score = requests.get(url, headers=headers).json()
+        print("score",score)
         return score
     
     def get_images(self)->namedtuple:
@@ -133,6 +137,7 @@ class Session(Base):
             ]
         }
         images_data = requests.post(url,json=json, headers=headers)
+        print("images_data",images_data)
         if images_data.status_code == 200:
             images_data = images_data.json()
             return images(images_data["croppedFrontID"], images_data.get("croppedBackID","croppedFrontID"))

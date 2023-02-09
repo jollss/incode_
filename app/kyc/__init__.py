@@ -13,7 +13,7 @@ def start_kyc():
 
 @kyc.route("/webhook", methods=["POST"])
 def webhook_handler():
-    print(request.json)
+    print("webhook",request.json)
     interview_id = request.json["interviewId"]
     if request.json["onboardingStatus"] == "ONBOARDING_FINISHED":
         fill_ocr_result.delay(interview_id)

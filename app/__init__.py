@@ -125,16 +125,16 @@ def create_app():
             return jsonify(success=False, response="No existe"), 404
 
 
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        capture_exception(e)
-        traceback.print_exc()
-        return jsonify(success=False, error_message="{}".format(e)), 500
+    # @app.errorhandler(Exception)
+    # def handle_exception(e):
+    #     capture_exception(e)
+    #     traceback.print_exc()
+    #     return jsonify(success=False, error_message="{}".format(e)), 500
 
-    @app.errorhandler(HTTPException)
-    def handle_bad_request(e):
-        capture_exception(e)
-        return jsonify(success=False, error_message="{}".format(e)), e.code
+    # @app.errorhandler(HTTPException)
+    # def handle_bad_request(e):
+    #     capture_exception(e)
+    #     return jsonify(success=False, error_message="{}".format(e)), e.code
 
     @app.teardown_appcontext
     def shutdown_session(exception=None):
