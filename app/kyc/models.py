@@ -75,6 +75,7 @@ class Session(Base):
         print("token",token)
         self.token = token.json()["token"]
         self.env = token.json()["env"]
+        print("session_id",token.json()["interviewId"])
         self.session_id = token.json()["interviewId"]
     
     def set_url(self):
