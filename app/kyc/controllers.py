@@ -41,8 +41,8 @@ def start_process(user_id):
         if status_ == "ONBOARDING_FINISHED":
             print("status",status_)
             print("status",session.session_id)
-            #fill_ocr_result.delay(session.session_id)
-            #fill_score.apply_async(args=[session.session_id], link=validate_score.s())
+            fill_ocr_result.delay(session.session_id)
+            fill_score.apply_async(args=[session.session_id], link=validate_score.s())
         
         db_session.add(session)
         db_session.commit()
@@ -52,49 +52,49 @@ def start_process(user_id):
 @celery.task()
 def fill_ocr_result(session_id):
     print("set_status.task")
-    try:
-        session = db_session.query(Session).filter(Session.session_id == session_id).one()
-        session.set_status()
-        db_session.commit()
-        ocr_data = session.get_ocr_by_token()
-        print(ocr_data)
-        ocr = OCRResult(session_id=session.id, **ocr_data)
-        db_session.add(ocr)
-        db_session.commit()
-    except Exception as e:
-        capture_exception(e)
-        return False
+    #try:
+    session = db_session.query(Session).filter(Session.session_id == session_id).one()
+    session.set_status()
+    db_session.commit()
+    ocr_data = session.get_ocr_by_token()
+    print(ocr_data)
+    ocr = OCRResult(session_id=session.id, **ocr_data)
+    db_session.add(ocr)
+    db_session.commit()
+    #except Exception as e:
+    #    capture_exception(e)
+    #    return False
 
 
 @celery.task()
 def fill_score(session_id):
-    try:
-        session = db_session.query(Session).filter(Session.session_id == session_id).one()
-        scores_data = session.get_scores_by_token()
-        value = scores_data["overall"].get("value")
-        status = scores_data["overall"].get("status")
-        print(scores_data)
-        id_validation_id = IdValidation(**scores_data.get("idValidation"))
-        db_session.add(id_validation_id)
-        curp_verification_id = CurpVerification(**scores_data.get("curpVerification"))
-        db_session.add(curp_verification_id)
-        id_ocr_confidence_id = IdOcrConfidence(**scores_data.get("idOcrConfidence"))
-        db_session.add(id_ocr_confidence_id)
-        db_session.commit()
-        scores = Score(
-            session_id=session.id,
-            id_validation=id_validation_id.id,
-            curp_verification=curp_verification_id.id,
-            id_ocr_confidence=id_ocr_confidence_id.id,
-            value=value,
-            status=status,
-        )
-        db_session.add(scores)
-        db_session.commit()
-        return session_id
-    except Exception as e:
-        capture_exception(e)
-        return False
+    #try:
+    session = db_session.query(Session).filter(Session.session_id == session_id).one()
+    scores_data = session.get_scores_by_token()
+    value = scores_data["overall"].get("value")
+    status = scores_data["overall"].get("status")
+    print(scores_data)
+    id_validation_id = IdValidation(**scores_data.get("idValidation"))
+    db_session.add(id_validation_id)
+    curp_verification_id = CurpVerification(**scores_data.get("curpVerification"))
+    db_session.add(curp_verification_id)
+    id_ocr_confidence_id = IdOcrConfidence(**scores_data.get("idOcrConfidence"))
+    db_session.add(id_ocr_confidence_id)
+    db_session.commit()
+    scores = Score(
+        session_id=session.id,
+        id_validation=id_validation_id.id,
+        curp_verification=curp_verification_id.id,
+        id_ocr_confidence=id_ocr_confidence_id.id,
+        value=value,
+        status=status,
+    )
+    db_session.add(scores)
+    db_session.commit()
+    return session_id
+    #except Exception as e:
+    #    capture_exception(e)
+    #    return False
 
 @celery.task()
 def validate_score(session_id):
