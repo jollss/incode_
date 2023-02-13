@@ -31,6 +31,7 @@ def start_process(user_id):
         db_session.refresh(exists_session)
         return exists_session.url
     except NoResultFound:
+        print("set_status.start_process")
         session.set_url()
         session.set_status()
         db_session.add(session)
@@ -40,6 +41,7 @@ def start_process(user_id):
 
 @celery.task()
 def fill_ocr_result(session_id):
+    print("set_status.task")
     try:
         session = db_session.query(Session).filter(Session.session_id == session_id).one()
         session.set_status()

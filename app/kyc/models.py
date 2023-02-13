@@ -71,12 +71,9 @@ class Session(Base):
         "x-api-key": os.environ.get('INCODE_API_KEY'),
         "Content-Type": "application/json"
         }
-        print("payload1",payload)
         token = requests.post(url, json=payload, headers=headers)
-        print("token1",token)
         self.token = token.json()["token"]
         self.env = token.json()["env"]
-        print("session_id",token.json()["interviewId"])
         self.session_id = token.json()["interviewId"]
     
     def set_url(self):
