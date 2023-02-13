@@ -96,7 +96,7 @@ class Session(Base):
             "X-Incode-Hardware-Id": self.token
         }
         self.status = requests.get(url, headers=headers).json()["onboardingStatus"]
-        print("token",self.status)
+        print("token2",self.status)
     
     
     def get_ocr_by_token(self)->dict:
