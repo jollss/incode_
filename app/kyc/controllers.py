@@ -17,8 +17,10 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 def start_process(user_id):
     session = Session(user_id=user_id)
-    session.start()
+    print("pene",session.user_id)
     try:
+        
+        session.start()
         print("try")
         exists_session = (
             db_session.query(Session)
@@ -34,7 +36,11 @@ def start_process(user_id):
     except NoResultFound:
         print("set_status.start_process noresult")
         session.set_url()
-        session.set_status()
+        status=session.set_status()
+        if status == "ONBOARDING_FINISHED":
+            fill_ocr_result.delay(session.session_id)
+            fill_score.apply_async(args=[session.session_id], link=validate_score.s())
+        print("pito",status)
         db_session.add(session)
         db_session.commit()
         return session.url
