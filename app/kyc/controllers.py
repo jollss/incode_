@@ -19,6 +19,7 @@ def start_process(user_id):
     session = Session(user_id=user_id)
     session.start()
     try:
+        print("try")
         exists_session = (
             db_session.query(Session)
             .filter(Session.session_id == session.session_id)
@@ -31,7 +32,7 @@ def start_process(user_id):
         db_session.refresh(exists_session)
         return exists_session.url
     except NoResultFound:
-        print("set_status.start_process")
+        print("set_status.start_process noresult")
         session.set_url()
         session.set_status()
         db_session.add(session)
