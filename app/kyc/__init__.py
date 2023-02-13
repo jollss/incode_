@@ -7,6 +7,7 @@ kyc = Blueprint("kyc", __name__, url_prefix="/kyc")
 
 @kyc.route("/start", methods=["POST"])
 def start_kyc():
+    print("que rayos")
     print("que user id se envia",request.json["user_id"])
     url = start_process(request.json["user_id"])
     return jsonify(success=True, url=url), 200
