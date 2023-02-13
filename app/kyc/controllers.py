@@ -37,7 +37,7 @@ def start_process(user_id):
         print("set_status.start_process noresult")
         session.set_url()
         status_=session.set_status()
-        print("status_",sstatus_tatus)
+        print("status_",status_)
         if status_ == "ONBOARDING_FINISHED":
             print("status",status_)
             print("status",session.session_id)
