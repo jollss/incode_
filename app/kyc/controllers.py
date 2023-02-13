@@ -36,11 +36,13 @@ def start_process(user_id):
     except NoResultFound:
         print("set_status.start_process noresult")
         session.set_url()
-        status=session.set_status()
-        if status == "ONBOARDING_FINISHED":
-            print("status",status)
-            fill_ocr_result.delay(session.session_id)
-            fill_score.apply_async(args=[session.session_id], link=validate_score.s())
+        status_=session.set_status()
+        print("status_",sstatus_tatus)
+        if status_ == "ONBOARDING_FINISHED":
+            print("status",status_)
+            print("status",session.session_id)
+            #fill_ocr_result.delay(session.session_id)
+            #fill_score.apply_async(args=[session.session_id], link=validate_score.s())
         
         db_session.add(session)
         db_session.commit()
