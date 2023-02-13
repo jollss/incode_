@@ -17,7 +17,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 def start_process(user_id):
     session = Session(user_id=user_id)
-    print("pene",session.user_id)
+    print("user_id",session.user_id)
     try:
         
         session.start()
