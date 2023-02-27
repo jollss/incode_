@@ -43,14 +43,14 @@ def create_app():
         print("entro a ping")
         return jsonify(success=True, response="pong!"), 200
 
-    @app.route("/ping1", methods=["GET"])
-    def ping1():
-        #token=get_token_SF()
-        #token=get_token_SF_db()
-        user="22ca8686bfa31a2ae5f55a7f60009e14"
-        enviar_sale_force=send_sf_datos(user)
-        print("enviar a sale force",enviar_sale_force)
-        return jsonify(success=True, response="pong!"), 200
+    # @app.route("/ping1", methods=["GET"])
+    # def ping1():
+    #     #token=get_token_SF()
+    #     #token=get_token_SF_db()
+    #     user="22ca8686bfa31a2ae5f55a7f60009e14"
+    #     enviar_sale_force=send_sf_datos(user)
+    #     print("enviar a sale force",enviar_sale_force)
+    #     return jsonify(success=True, response="pong!"), 200
     
 
     @app.route("/loads-ine", methods=["POST"])
