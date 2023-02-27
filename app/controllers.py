@@ -409,6 +409,7 @@ def send_economica(datos):
         # db_session.close()
         FLASK_ENV = os.environ.get("FLASK_ENV")
         if FLASK_ENV == "production":
+            #send_sf_datos
             send_qb_datos(datos["user_id"])
         else:
             result_ine.status_ine_loads = 3
