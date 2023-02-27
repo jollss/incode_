@@ -394,3 +394,26 @@ class Check(Base):
                     setattr(self, key, value)
         self.created_at = datetime.datetime.now(tz=tz)
         self.updated_at = datetime.datetime.now(tz=tz)
+
+
+class SF_token(Base):
+    __tablename__ = "sf_token"
+    id = Column(Integer, primary_key=True)
+    access_token=Column(String(150))
+    instance_url=Column(String(50))
+    issued_at=Column(String(50))
+    created_at = Column(DateTime, nullable=True, default=datetime.datetime.now(tz=tz))
+
+    def __init__(self, access_token,instance_url,issued_at):
+        self.access_token = access_token
+        self.instance_url = instance_url
+        self.issued_at = issued_at
+
+    def __repr__(self):
+        return "%r" % (self.id)
+
+    def update(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                if value is not None:
+                    setattr(self, key, value)

@@ -420,6 +420,104 @@ def send_economica(datos):
         capture_exception(e)
         return False
 
+def get_token_SF():
+    try:
+        url = os.environ.get("SF_url_")
+        sf_username=os.environ.get("SF_username")
+        sf_password=os.environ.get("SF_password")
+        sf_grant_type=os.environ.get("SF_grant_type")
+        sf_client_id=os.environ.get("SF_client_id")
+        sf_client_secret=os.environ.get("SF_client_secret")
+        payload = "-----011000010111000001101001\r\nContent-Disposition: form-data;name=\"username\"\r\n\r\n{0}\r\n-----011000010111000001101001\r\nContent-Disposition:form-data; name=\"password\"\r\n\r\n{1}\r\n-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"grant_type\"\r\n\r\n{2}\r\n-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"client_id\"\r\n\r\n{3}\r\n-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"client_secret\"\r\n\r\n{4}\r\n-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"\"\r\n\r\n\r\n-----011000010111000001101001--\r\n".format(sf_username,sf_password,sf_grant_type,sf_client_id,sf_client_secret)
+        headers = {
+            "cookie": "CookieConsentPolicy=0%3A0; LSKey-c%24CookieConsentPolicy=0%3A0; BrowserId=0jJ5wbbBEe2LNtHLZ8N_vA",
+            "Content-Type": "multipart/form-data; boundary=---011000010111000001101001"
+        }
+        response = requests.request("POST", url, data=payload, headers=headers)
+        if response.status_code==200:
+            #guardar el token 
+            token=response.json()
+            access_token=token['access_token']
+            instance_url=token['instance_url']
+            issued_at=token['issued_at']
+            save_token = SF_token(
+                    access_token=access_token, 
+                    instance_url=instance_url,
+                    issued_at=issued_at
+                )
+            db_session.add(save_token)
+            db_session.commit()
+            return access_token
+    except Exception as e:
+        capture_exception(e)
+        traceback.print_exc()
+        return False
+
+def get_token_SF_db():
+    try:
+        token = db_session.query(SF_token).order_by(SF_token.id.desc()).first()
+        #validamos si existe token
+        if token==None:
+            token=get_token_SF()
+            return token
+        return token.access_token
+    except Exception as e:
+        capture_exception(e)
+        traceback.print_exc()
+        return False
+
+def send_sf_datos(user):
+    try:
+        res_ine = db_session.query(ResultsIne).filter_by(user_id=user).first()
+        frente=res_ine.front
+        back=res_ine.back
+        user_id=str(res_ine.user_id)
+        user_id = user_id.replace('-','')    
+        payload = {
+            "uuid": user_id,
+            "image_front": frente,
+            "image_back": back
+            }
+        token=get_token_SF_db()
+        if token:
+            #enviamos SalesForce
+            url = "https://curadeudamexico--test.sandbox.my.salesforce.com/services/apexrest/v1/Ine/"        
+            headers = {
+            "cookie": "BrowserId=0jJ5wbbBEe2LNtHLZ8N_vA; CookieConsentPolicy=0%3A1; LSKey-c%24CookieConsentPolicy=0%3A1",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {}".format(token)
+            }
+            response = requests.request("POST", url, json=payload, headers=headers)
+            #print("response",response.json())
+            if response.status_code==401:#se valida porque el token murio
+                #enviamos SalesForce nuevamente
+                token=get_token_SF()                
+                url = "https://curadeudamexico--test.sandbox.my.salesforce.com/services/apexrest/v1/Ine/"                
+                headers = {
+                "cookie": "BrowserId=0jJ5wbbBEe2LNtHLZ8N_vA; CookieConsentPolicy=0%3A1; LSKey-c%24CookieConsentPolicy=0%3A1",
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {}".format(token)
+                }
+                response = requests.request("POST", url, json=payload, headers=headers)
+                #print("response else",response.json())
+            code=response.status_code
+        if code == 200:
+            res_ine.status_ine_loads = 3
+            db_session.add(res_ine)
+            db_session.commit()
+            db_session.close()
+            return True
+        else:
+            res_ine.status_ine_loads = 2
+            db_session.add(res_ine)
+            db_session.commit()
+            db_session.close()
+            return False
+            
+    except Exception as e:
+        capture_exception(e)
+        traceback.print_exc()
+        return False
 
 def send_qb_datos(user):
     res_ine = db_session.query(ResultsIne).filter_by(user_id=user).first()
