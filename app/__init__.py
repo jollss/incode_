@@ -43,15 +43,22 @@ def create_app():
         print("entro a ping")
         return jsonify(success=True, response="pong!"), 200
 
-    # @app.route("/ping1", methods=["GET"])
-    # def ping1():
-    #     #token=get_token_SF()
-    #     #token=get_token_SF_db()
-    #     user="22ca8686bfa31a2ae5f55a7f60009e14"
-    #     enviar_sale_force=send_sf_datos(user)
-    #     print("enviar a sale force",enviar_sale_force)
-    #     return jsonify(success=True, response="pong!"), 200
-    
+    @app.route("/Get_token_SF", methods=["GET"])
+    def get_token_sf():
+        try:
+            #headers para que no cualquiera entre en teoria
+            if request.headers['X-Cyndaquill-Key'] == current_app.config['TOKEN_SF_KEY']:
+                token=get_token_SF_db()
+                if token:
+                    return jsonify(success=True, response=token), 200
+                return jsonify(success=False,error_code=4003,response="uppss"), 400
+                #4001 Not authorized and 401 code http or https
+                #4002 propio de catch
+            return jsonify(success=False,error_code=4002,response="wrong token"), 400
+        except Exception as e:
+            capture_exception(e)
+            traceback.print_exc()
+            return jsonify(success=False,error_code=4001,response="Not authorized"), 401
 
     @app.route("/loads-ine", methods=["POST"])
     def loadsInes():
@@ -135,16 +142,16 @@ def create_app():
             return jsonify(success=False, response="No existe"), 404
 
 
-    # @app.errorhandler(Exception)
-    # def handle_exception(e):
-    #     capture_exception(e)
-    #     traceback.print_exc()
-    #     return jsonify(success=False, error_message="{}".format(e)), 500
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        capture_exception(e)
+        traceback.print_exc()
+        return jsonify(success=False, error_message="{}".format(e)), 500
 
-    # @app.errorhandler(HTTPException)
-    # def handle_bad_request(e):
-    #     capture_exception(e)
-    #     return jsonify(success=False, error_message="{}".format(e)), e.code
+    @app.errorhandler(HTTPException)
+    def handle_bad_request(e):
+        capture_exception(e)
+        return jsonify(success=False, error_message="{}".format(e)), e.code
 
     @app.teardown_appcontext
     def shutdown_session(exception=None):

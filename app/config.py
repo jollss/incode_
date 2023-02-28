@@ -7,6 +7,7 @@ class Config:
     FLASK_ENV = os.environ.get('FLASK_ENV')
     SECRET_KEY = os.environ.get('SECRET_KEY')
     SESSION_COOKIE_NAME = os.environ.get('SESSION_COOKIE_NAME')
+    TOKEN_SF_KEY = os.environ.get('TOKEN_SF_KEY')
     STATIC_FOLDER = 'static'
     TEMPLATES_FOLDER = 'templates'
     

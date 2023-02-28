@@ -475,6 +475,7 @@ def send_sf_datos(user):
         user_id=str(res_ine.user_id)
         user_id = user_id.replace('-','')    
         payload = {
+            "email":res_ine.email_user,
             "uuid": user_id,
             "image_front": frente,
             "image_back": back
